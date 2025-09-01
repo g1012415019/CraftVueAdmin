@@ -285,7 +285,7 @@ const toggleRowSelection = (rowId: string | number, checked: boolean) => {
   handleCheckedRowKeysChange(checkedRowKeys.value)
 }
 
-const getRowProps = (row: any, index: number) => {
+const getRowProps = (_row: any, index: number) => {
   return {
     style: { cursor: 'pointer' },
     onMouseenter: () => {

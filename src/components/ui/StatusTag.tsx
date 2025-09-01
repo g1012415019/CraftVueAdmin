@@ -1,5 +1,6 @@
 import type { PropType } from 'vue'
 import type { UserStatus } from '@/types'
+import { NTag } from 'naive-ui'
 
 interface Props {
   readonly status: UserStatus
