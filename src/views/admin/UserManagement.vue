@@ -156,8 +156,14 @@ const fetchUsers = async () => {
 }
 
 // 初始化数据
-onMounted(() => {
-  fetchUsers()
+onMounted(async () => {
+  try {
+    await fetchUsers()
+    console.log('用户数据加载完成:', userStore.users.length)
+  } catch (error) {
+    console.error('用户数据加载失败:', error)
+    message.error('数据加载失败')
+  }
 })
 </script>
 
