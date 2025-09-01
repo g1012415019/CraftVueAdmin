@@ -1,217 +1,286 @@
 <template>
   <div class="user-management">
-    <PageHeader :title="t('user.title')">
-      <template #extra>
-        <NSpace>
-          <NButton @click="handleRefresh">
-            <template #icon>
-              <NIcon :component="RefreshOutline" />
-            </template>
-            刷新
-          </NButton>
-          <NButton @click="viewStore.toggleConfigPanel">
-            <template #icon>
-              <NIcon :component="SettingsOutline" />
-            </template>
-            表格设置
-          </NButton>
-          <NButton type="primary" @click="handleAdd">
-            <template #icon>
-              <NIcon :component="AddOutline" />
-            </template>
-            {{ t('user.addUser') }}
-          </NButton>
-        </NSpace>
-      </template>
-    </PageHeader>
+    <!-- 顶部工具栏 -->
+    <div class="top-toolbar">
+      <div class="left-section">
+        <NButton quaternary size="small">
+          <template #icon>
+            <NIcon :component="MenuOutline" />
+          </template>
+        </NButton>
+        <NButton quaternary size="small">
+          <template #icon>
+            <NIcon :component="AddOutline" />
+          </template>
+        </NButton>
+        <span class="title">站/桩/端口详情</span>
+      </div>
+      
+      <div class="right-section">
+        <NButton quaternary size="small">
+          <template #icon>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NButton>
+        <NButton quaternary size="small">
+          <template #icon>
+            <NIcon :component="FilterOutline" />
+          </template>
+        </NButton>
+        <NButton quaternary size="small">草稿箱</NButton>
+        <NButton type="primary" size="small">+ 记录</NButton>
+      </div>
+    </div>
 
-    <!-- 视图管理 -->
-    <ViewManager />
+    <!-- 标签页 -->
+    <div class="tabs-section">
+      <div class="tabs-left">
+        <NTabs v-model:value="activeTab" type="line" size="small">
+          <NTab name="all" tab="全部" />
+          <NTab name="detail" tab="详情" />
+          <NTab name="table1" tab="表格1" />
+          <NTab name="table2" tab="表格2" />
+          <NTab name="table3" tab="表格3" />
+        </NTabs>
+      </div>
+      <div class="tabs-right">
+        <NButton quaternary size="small">
+          <template #icon>
+            <NIcon :component="RefreshOutline" />
+          </template>
+        </NButton>
+        <span class="record-count">共3行，1/1页</span>
+      </div>
+    </div>
 
-    <!-- 高级数据表格 -->
-    <AdvancedDataTable
-      :data="userStore.users"
-      :loading="userStore.loading"
-      :pagination="pagination"
-      @page-change="handlePageChange"
-      @page-size-change="handlePageSizeChange"
-      @row-click="handleRowClick"
-    />
+    <!-- 搜索栏 -->
+    <div class="search-section">
+      <div class="search-group">
+        <span class="search-label">站点名称</span>
+        <NInput size="small" placeholder="搜索" clearable>
+          <template #suffix>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NInput>
+      </div>
+      
+      <div class="search-group">
+        <span class="search-label">站点编号</span>
+        <NInput size="small" placeholder="搜索" clearable>
+          <template #suffix>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NInput>
+      </div>
+      
+      <div class="search-group">
+        <span class="search-label">设备品牌型号</span>
+        <NInput size="small" placeholder="搜索" clearable>
+          <template #suffix>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NInput>
+      </div>
+    </div>
 
-    <!-- 表格配置面板 -->
-    <TableConfigPanel />
-
-    <!-- 用户表单模态框 -->
-    <Modal
-      v-model:show="showModal"
-      :title="isEdit ? t('user.editUser') : t('user.addUser')"
-      :width="600"
-      :mask-closable="false"
-      @close="showModal = false"
-    >
-        <UserForm
-          ref="userFormRef"
-          :initial-data="currentUser"
-          @submit="handleSubmit"
-        />
-        
-        <template #action>
-          <NSpace>
-            <NButton @click="showModal = false">
-              {{ t('common.cancel') }}
-            </NButton>
-            <NButton type="primary" @click="handleFormSubmit">
-              {{ t('common.save') }}
-            </NButton>
-          </NSpace>
-        </template>
-    </Modal>
+    <!-- 数据表格 -->
+    <div class="table-section">
+      <NDataTable
+        :columns="columns"
+        :data="tableData"
+        :pagination="false"
+        size="small"
+        :row-key="(row: any) => row.id"
+        class="compact-table"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { AddOutline, RefreshOutline, SettingsOutline } from '@vicons/ionicons5'
-import type { User, CreateUserDto, UpdateUserDto } from '@/types'
-import { useUserStore } from '@/stores/user'
-import { useViewStore } from '@/stores/view'
-import UserForm from '@/components/forms/UserForm.vue'
-import Modal from '@/components/ui/Modal.vue'
+import { MenuOutline, AddOutline, SearchOutline, RefreshOutline } from '@vicons/ionicons5'
 
-const { t } = useI18n()
-const message = useMessage()
-const userStore = useUserStore()
-const viewStore = useViewStore()
+// 添加FilterOutline图标的替代
+const FilterOutline = MenuOutline
 
-const showModal = ref(false)
-const isEdit = ref(false)
-const currentUser = ref<User | null>(null)
-const userFormRef = ref<InstanceType<typeof UserForm> | null>(null)
+const activeTab = ref('table3')
 
-const pagination = reactive({
-  page: 1,
-  pageSize: 10,
-  total: 0
-})
-
-const handleAdd = () => {
-  isEdit.value = false
-  currentUser.value = null
-  showModal.value = true
-}
-
-const handleRowClick = (user: User) => {
-  if (viewStore.currentView?.displaySettings.interactionMode === 'classic') {
-    handleEdit(user)
+const columns = [
+  {
+    type: 'selection',
+    width: 40
+  },
+  {
+    title: '站点编号',
+    key: 'siteNumber',
+    width: 80,
+    sorter: true
+  },
+  {
+    title: '站点名称',
+    key: 'siteName',
+    width: 120,
+    sorter: true
+  },
+  {
+    title: '所属区县',
+    key: 'district',
+    width: 100
+  },
+  {
+    title: '站点性质',
+    key: 'siteType',
+    width: 80
+  },
+  {
+    title: '桩数量',
+    key: 'pileCount',
+    width: 80
+  },
+  {
+    title: '端口数量',
+    key: 'portCount',
+    width: 80
+  },
+  {
+    title: '设备',
+    key: 'device',
+    width: 100
   }
-}
+]
 
-const handleEdit = (user: User) => {
-  isEdit.value = true
-  currentUser.value = user
-  showModal.value = true
-}
-
-const handleFormSubmit = async () => {
-  const success = await userFormRef.value?.validate()
-  if (success) {
-    // 表单验证通过，UserForm 组件会触发 submit 事件
+const tableData = ref([
+  {
+    id: 1,
+    siteNumber: 2,
+    siteName: 'xxx小2',
+    district: '锡山区',
+    siteType: '民用',
+    pileCount: 2,
+    portCount: 201,
+    device: '雅迪'
+  },
+  {
+    id: 2,
+    siteNumber: 1,
+    siteName: 'xxx小区',
+    district: '新吴区',
+    siteType: '民用',
+    pileCount: 2,
+    portCount: 200,
+    device: '雅迪'
+  },
+  {
+    id: 3,
+    siteNumber: 3,
+    siteName: 'xxx小区3',
+    district: '惠山区',
+    siteType: '民用',
+    pileCount: 25,
+    portCount: 500,
+    device: '雅迪'
   }
-}
-
-const handleSubmit = async (data: CreateUserDto | UpdateUserDto) => {
-  try {
-    if (isEdit.value) {
-      await userStore.updateUser(data as UpdateUserDto)
-      message.success('更新成功')
-    } else {
-      await userStore.createUser(data as CreateUserDto)
-      message.success('创建成功')
-    }
-    showModal.value = false
-    await fetchUsers()
-  } catch (error) {
-    message.error(isEdit.value ? '更新失败' : '创建失败')
-  }
-}
-
-const handlePageChange = (page: number) => {
-  pagination.page = page
-  fetchUsers()
-}
-
-const handlePageSizeChange = (pageSize: number) => {
-  pagination.pageSize = pageSize
-  pagination.page = 1
-  fetchUsers()
-}
-
-const handleRefresh = () => {
-  fetchUsers()
-  message.success('数据已刷新')
-}
-
-const fetchUsers = async () => {
-  await userStore.fetchUsers(pagination.page, pagination.pageSize)
-  pagination.total = userStore.total
-}
-
-// 初始化数据
-onMounted(async () => {
-  try {
-    await fetchUsers()
-    console.log('用户数据加载完成:', userStore.users.length)
-  } catch (error) {
-    console.error('用户数据加载失败:', error)
-    message.error('数据加载失败')
-  }
-})
+])
 </script>
 
 <style lang="scss" scoped>
 .user-management {
-  padding: 12px;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: var(--bg-color-secondary);
+  background: #f5f5f5;
   
-  :deep(.page-header) {
-    margin-bottom: 0;
-    padding: 8px 0;
-  }
-  
-  :deep(.view-manager) {
-    margin: 0;
-    padding: 4px 0;
-  }
-  
-  :deep(.advanced-data-table) {
-    flex: 1;
+  .top-toolbar {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
     
-    .n-data-table-wrapper {
+    .left-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .title {
+        font-size: 14px;
+        color: #333;
+        margin-left: 8px;
+      }
+    }
+    
+    .right-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+  
+  .tabs-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    
+    .tabs-left {
       flex: 1;
     }
     
-    .n-data-table {
+    .tabs-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      .record-count {
+        font-size: 12px;
+        color: #666;
+      }
+    }
+  }
+  
+  .search-section {
+    display: flex;
+    gap: 24px;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      
+      .search-label {
+        font-size: 12px;
+        color: #666;
+        white-space: nowrap;
+      }
+    }
+  }
+  
+  .table-section {
+    flex: 1;
+    padding: 0 16px 16px;
+    background: white;
+    
+    :deep(.compact-table) {
       .n-data-table-th {
         padding: 6px 8px;
         font-size: 12px;
-        line-height: 1.4;
+        background: #fafafa;
       }
       
       .n-data-table-td {
         padding: 6px 8px;
         font-size: 12px;
-        line-height: 1.4;
       }
-    }
-    
-    .table-pagination {
-      padding: 8px 0;
-      margin: 0;
+      
+      .n-data-table-tr:nth-child(odd) {
+        background: #fafafa;
+      }
     }
   }
 }
