@@ -368,19 +368,24 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .advanced-data-table {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  
   .quick-filters {
-    padding: $space-md 0;
+    padding: 8px 0;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: $space-md;
+    margin-bottom: 8px;
   }
 
   .summary-row {
-    margin-top: $space-md;
-    padding: 12px 16px;
+    margin-top: 8px;
+    padding: 8px 12px;
     background: var(--n-table-header-color);
     border: 1px solid var(--n-border-color);
     border-top: none;
     font-weight: 500;
+    font-size: 12px;
   }
 }
 

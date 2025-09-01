@@ -169,8 +169,50 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .user-management {
-  padding: $space-lg;
-  min-height: 100vh;
+  padding: 12px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   background: var(--bg-color-secondary);
+  
+  :deep(.page-header) {
+    margin-bottom: 0;
+    padding: 8px 0;
+  }
+  
+  :deep(.view-manager) {
+    margin: 0;
+    padding: 4px 0;
+  }
+  
+  :deep(.advanced-data-table) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    
+    .n-data-table-wrapper {
+      flex: 1;
+    }
+    
+    .n-data-table {
+      .n-data-table-th {
+        padding: 6px 8px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      
+      .n-data-table-td {
+        padding: 6px 8px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+    }
+    
+    .table-pagination {
+      padding: 8px 0;
+      margin: 0;
+    }
+  }
 }
 </style>

@@ -22,9 +22,9 @@ defineProps<Props>()
 <style lang="scss" scoped>
 .page-header {
   @include flex-between;
-  padding: $space-lg 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: $space-lg;
+  margin-bottom: 8px;
 
   &__content {
     flex: 1;
@@ -32,19 +32,21 @@ defineProps<Props>()
 
   &__title {
     margin: 0;
-    font-size: $font-size-xl;
+    font-size: 18px;
     font-weight: 600;
     color: var(--text-color-primary);
+    line-height: 1.4;
   }
 
   &__description {
-    margin: $space-xs 0 0;
+    margin: 4px 0 0;
     color: var(--text-color-secondary);
-    font-size: $font-size-sm;
+    font-size: 13px;
+    line-height: 1.4;
   }
 
   &__extra {
-    margin-left: $space-lg;
+    margin-left: 16px;
   }
 }
 </style>
