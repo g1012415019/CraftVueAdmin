@@ -1,7 +1,7 @@
 <template>
-  <TableLowcodeDemo />
+  <TableLowcode2Demo />
 </template>
 
 <script setup lang="ts">
-  import TableLowcodeDemo from '@/views/demo/TableLowcodeDemo.vue';
+  import TableLowcode2Demo from '@/views/demo/TableLowcode2Demo.vue';
 </script>

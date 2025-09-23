@@ -192,12 +192,6 @@ export function useTableRowInteraction(
       onDragleave: (e: DragEvent) => handleDragLeave(e, row),
       onDragover: (e: DragEvent) => handleDragOver(e, row),
       onDrop: (e: DragEvent) => handleDrop(e, row),
-      onMouseenter: () => {
-        hoveredRowKey.value = row.key;
-      },
-      onMouseleave: () => {
-        hoveredRowKey.value = null;
-      },
     };
   };
 
