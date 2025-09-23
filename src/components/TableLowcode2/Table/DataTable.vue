@@ -39,16 +39,7 @@
       />
     </div>
 
-    <!-- 右键菜单 -->
-    <TableContextMenu
-      v-if="config.interaction.contextMenu"
-      :showDropdown="showDropdown"
-      :dropdownX="dropdownX"
-      :dropdownY="dropdownY"
-      :contextMenuOptions="contextMenuOptions"
-      :onClickoutside="onClickoutside"
-      :handleMenuSelect="handleMenuSelect"
-    />
+    <!-- 右键菜单已移除 -->
     
     <!-- 悬浮操作栏 -->
     <FloatingActionBar
@@ -82,10 +73,8 @@ import { useTableContextMenu } from '@/components/TableLowcode2/Table/composable
 import { useTableRowInteraction } from '@/components/TableLowcode2/Table/composables/useTableRowInteraction';
 import { useTableColumns } from '@/components/TableLowcode2/Table/composables/useTableColumns';
 import { useColumnDropdown } from '@/components/TableLowcode2/Table/composables/useColumnDropdown';
-
 import { useFloatingActionBar } from '@/components/TableLowcode2/Table/composables/useFloatingActionBar';
 
-import TableContextMenu from '@/components/TableLowcode2/TableContextMenu.vue';
 import ColumnHeaderDropdown from '@/components/TableLowcode2/Table/ColumnHeaderDropdown.vue';
 import FloatingActionBar from '@/components/TableLowcode2/Table/FloatingActionBar.vue';
 import { TableConfig } from '@/types/table';

@@ -231,15 +231,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, computed, provide } from 'vue';
+import { ref, inject, computed, provide, type Ref } from 'vue';
 import DataTable from './Table/DataTable.vue';
-import type { TableConfig } from '@/types/table';
 
 // 定义 emits
 const emit = defineEmits(['openConfig']);
 
 // 注入配置
-const config = inject('tableConfig') as Ref<TableConfig>;
+const config = inject('tableConfig') as Ref<any>;
 
 // 筛选相关
 const searchKeyword = ref('');

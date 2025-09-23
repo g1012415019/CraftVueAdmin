@@ -1,155 +1,24 @@
 <template>
   <n-drawer v-model:show="show" :width="800" placement="right">
     <n-drawer-content title="表格配置" closable :body-content-style="{ padding: '0' }">
-      <div class="config-panel flex h-full bg-white">
+      <div class="config-panel">
         <!-- 左侧菜单 -->
-        <div class="w-48 bg-gray-50 border-r border-gray-200 p-2">
-          <div class="space-y-3">
-            <!-- 基础设置 -->
-            <div>
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-1">基础设置</div>
-              <div class="space-y-1">
+        <div class="menu-sidebar">
+          <div class="menu-groups">
+            <div 
+              v-for="group in menuGroups" 
+              :key="group.key" 
+              class="menu-group"
+            >
+              <div class="group-title">{{ group.title }}</div>
+              <div class="menu-items">
                 <div
-                  @click="activeMenu = 'basic'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'basic'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
+                  v-for="item in group.items"
+                  :key="item.key"
+                  @click="activeMenu = item.key"
+                  :class="['menu-item', { active: activeMenu === item.key }]"
                 >
-                  基础
-                </div>
-                <div
-                  @click="activeMenu = 'view'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'view'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  视图设置
-                </div>
-              </div>
-            </div>
-
-            <!-- 数据展示 -->
-            <div>
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-1">数据展示</div>
-              <div class="space-y-1">
-                <div
-                  @click="activeMenu = 'columns'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'columns'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  显示列
-                </div>
-                <div
-                  @click="activeMenu = 'group'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'group'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  分组
-                </div>
-                <div
-                  @click="activeMenu = 'records'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'records'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  分页设置
-                </div>
-              </div>
-            </div>
-
-            <!-- 数据处理 -->
-            <div>
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-1">数据处理</div>
-              <div class="space-y-1">
-                <div
-                  @click="activeMenu = 'filter'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'filter'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  过滤
-                </div>
-                <div
-                  @click="activeMenu = 'sort'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'sort'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  排序
-                </div>
-                <div
-                  @click="activeMenu = 'quick-filter'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'quick-filter'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  快速筛选
-                </div>
-              </div>
-            </div>
-
-            <!-- 用户交互 -->
-            <div>
-              <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-1">用户交互</div>
-              <div class="space-y-1">
-                <div
-                  @click="activeMenu = 'fields'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'fields'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  字段
-                </div>
-                <div
-                  @click="activeMenu = 'operations'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'operations'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  用户操作
-                </div>
-                <div
-                  @click="activeMenu = 'filter-list'"
-                  :class="[
-                    'px-3 py-2 text-sm font-medium cursor-pointer rounded-md',
-                    activeMenu === 'filter-list'
-                      ? 'text-blue-600 bg-blue-100'
-                      : 'text-gray-700 hover:bg-gray-100',
-                  ]"
-                >
-                  筛选列表
+                  {{ item.label }}
                 </div>
               </div>
             </div>
@@ -157,16 +26,16 @@
         </div>
 
         <!-- 右侧内容 -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-          <!-- 动态内容 -->
-          <div class="flex-1 p-6 overflow-y-auto">
+        <div class="content-area">
+          <div class="content-body">
             <component :is="currentComponent" />
           </div>
-
-          <!-- 底部按钮 -->
-          <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <n-button>重置</n-button>
-            <n-button type="primary">保存设置</n-button>
+          
+          <div class="content-footer">
+            <n-space justify="end">
+              <n-button>重置</n-button>
+              <n-button type="primary">保存设置</n-button>
+            </n-space>
           </div>
         </div>
       </div>
@@ -175,57 +44,148 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed } from 'vue';
-  // 导入新的表单组件
-  import BasicSettingsForm from './forms/BasicSettingsForm.vue';
-  import SelectionSettingsForm from './forms/SelectionSettingsForm.vue';
-  import SortFilterSettingsForm from './forms/SortFilterSettingsForm.vue';
-  import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
-  import ActionSettingsForm from './forms/ActionSettingsForm.vue';
-  import ColumnSettingsForm from './forms/ColumnSettingsForm.vue';
-  import DataSettingsForm from './forms/DataSettingsForm.vue';
-  import InteractionSettingsForm from './forms/InteractionSettingsForm.vue';
-  import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
-  import SortSettingsForm from './forms/SortSettingsForm.vue';
-  import FieldSettingsForm from './forms/FieldSettingsForm.vue';
+import { ref, computed } from 'vue';
+import BasicSettingsForm from './forms/BasicSettingsForm.vue';
+import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
+import ActionSettingsForm from './forms/ActionSettingsForm.vue';
+import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
+import SortSettingsForm from './forms/SortSettingsForm.vue';
+import InteractionSettingsForm from './forms/InteractionSettingsForm.vue';
+import FieldSettingsForm from './forms/FieldSettingsForm.vue';
 
-  const props = defineProps<{
-    show: boolean;
-  }>();
+const props = defineProps<{
+  show: boolean;
+}>();
 
-  const emit = defineEmits<{
-    'update:show': [value: boolean];
-  }>();
+const emit = defineEmits<{
+  'update:show': [value: boolean];
+}>();
 
-  const show = computed({
-    get: () => props.show,
-    set: (value) => emit('update:show', value),
-  });
+const show = computed({
+  get: () => props.show,
+  set: (value) => emit('update:show', value),
+});
 
-  const activeMenu = ref('basic');
+const activeMenu = ref('basic');
 
-  const menuItems = [
-    { key: 'basic', label: '基础', component: BasicSettingsForm },
-    { key: 'view', label: '视图设置', component: SelectionSettingsForm },
-    { key: 'columns', label: '显示列', component: ColumnSettingsForm },
-    { key: 'group', label: '分组', component: SortFilterSettingsForm },
-    { key: 'records', label: '分页设置', component: PaginationSettingsForm },
-    { key: 'filter', label: '过滤', component: ActionSettingsForm },
-    { key: 'sort', label: '排序', component: SortSettingsForm },
-    { key: 'fields', label: '字段', component: FieldSettingsForm },
-    { key: 'operations', label: '用户操作', component: BasicSettingsForm },
-    { key: 'filter-list', label: '筛选列表', component: FilterListSettingsForm },
-    { key: 'quick-filter', label: '快速筛选', component: BasicSettingsForm },
-  ];
+const menuGroups = [
+  {
+    key: 'basic-settings',
+    title: '基础设置',
+    items: [
+      { key: 'basic', label: '基础', component: BasicSettingsForm },
+      { key: 'pagination', label: '分页', component: PaginationSettingsForm },
+    ]
+  },
+  {
+    key: 'structure',
+    title: '结构分组',
+    items: [
+      { key: 'columns', label: '列配置', component: FieldSettingsForm },
+    ]
+  },
+  {
+    key: 'data-processing',
+    title: '数据处理',
+    items: [
+      { key: 'sort-filter', label: '排序', component: SortSettingsForm },
+      { key: 'data', label: '筛选设置', component: FilterListSettingsForm },
+    ]
+  },
+  {
+    key: 'interaction',
+    title: '交互功能',
+    items: [
+      { key: 'interaction', label: '交互设置', component: InteractionSettingsForm },
+      { key: 'actions', label: '操作配置', component: ActionSettingsForm },
+    ]
+  }
+];
 
-  const currentComponent = computed(() => {
-    const menu = menuItems.find((m) => m.key === activeMenu.value);
-    return menu?.component;
-  });
+const allMenuItems = menuGroups.flatMap(group => group.items);
+
+const currentComponent = computed(() => {
+  const menu = allMenuItems.find((m) => m.key === activeMenu.value);
+  return menu?.component;
+});
 </script>
 
 <style scoped>
-  .config-panel {
-    height: 100%;
-  }
+.config-panel {
+  display: flex;
+  height: 100%;
+  background: white;
+}
+
+.menu-sidebar {
+  width: 192px;
+  background: #f8f9fa;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px;
+}
+
+.menu-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 12px;
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-item {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+  background: #e5e7eb;
+}
+
+.menu-item.active {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.content-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8f9fa;
+}
 </style>
