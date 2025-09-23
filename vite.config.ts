@@ -1,55 +1,96 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueJsx from '@vitejs/plugin-vue-jsx'
-import { resolve } from 'path'
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
+import type { UserConfig, ConfigEnv } from 'vite';
+import { loadEnv } from 'vite';
+import { resolve } from 'path';
+import { wrapperEnv } from './build/utils';
+import { createVitePlugins } from './build/vite/plugin';
+import { OUTPUT_DIR } from './build/constant';
+import { createProxy } from './build/vite/proxy';
+import pkg from './package.json';
+import { format } from 'date-fns';
+const { dependencies, devDependencies, name, version } = pkg;
 
-export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/CraftVueAdmin/' : '/',
-  plugins: [
-    vue(),
-    vueJsx(),
-    AutoImport({
-      imports: [
-        'vue',
-        'vue-router',
-        'vue-i18n',
-        '@vueuse/core',
+const __APP_INFO__ = {
+  pkg: { dependencies, devDependencies, name, version },
+  lastBuildTime: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+};
+
+function pathResolve(dir: string) {
+  return resolve(process.cwd(), '.', dir);
+}
+
+export default ({ command, mode }: ConfigEnv): UserConfig => {
+  const root = process.cwd();
+  const env = loadEnv(mode, root);
+  const viteEnv = wrapperEnv(env);
+  const { VITE_PUBLIC_PATH, VITE_PORT, VITE_PROXY } = viteEnv;
+  const isBuild = command === 'build';
+  return {
+    base: VITE_PUBLIC_PATH,
+    esbuild: {},
+    resolve: {
+      alias: [
         {
-          'naive-ui': [
-            'useDialog',
-            'useMessage',
-            'useNotification',
-            'useLoadingBar',
-            'NIcon'
-          ],
-          'pinia': ['defineStore', 'storeToRefs'],
-          '@/stores/app': ['useAppStore'],
-          '@/stores/user': ['useUserStore'],
-          '@/stores/view': ['useViewStore'],
-          'dayjs': [['default', 'dayjs']]
-        }
+          find: /\/#\//,
+          replacement: pathResolve('types') + '/',
+        },
+        {
+          find: '@',
+          replacement: pathResolve('src') + '/',
+        },
       ],
-      dts: '.vite/auto-imports.d.ts',
-    }),
-    Components({
-      resolvers: [NaiveUiResolver()],
-      dts: '.vite/components.d.ts',
-    })
-  ],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src')
-    }
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        api: 'modern-compiler',
-        additionalData: `@use "@/styles/variables.scss" as *;`
-      }
-    }
-  }
-})
+      dedupe: ['vue'],
+    },
+    plugins: createVitePlugins(viteEnv, isBuild),
+    define: {
+      __APP_ENV__: JSON.stringify(env.APP_ENV),
+      __APP_INFO__: JSON.stringify(__APP_INFO__),
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
+    },
+    server: {
+      host: true,
+      port: VITE_PORT,
+      proxy: createProxy(VITE_PROXY),
+    },
+    optimizeDeps: {
+      include: [],
+      exclude: ['vue-demi'],
+    },
+    // Add CSS configuration here
+    css: {
+      preprocessorOptions: {
+        less: {
+          // Example: if you have global variables, import them here
+          // additionalData: `@import "@/styles/variables.less";`,
+          paths: [
+            resolve(__dirname, 'src/styles') // Add src/styles to Less include paths
+          ],
+        },
+      },
+    },
+    build: {
+      target: 'es2020',
+      cssTarget: 'chrome80',
+      outDir: OUTPUT_DIR,
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 2000,
+      // 构建分包策略
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'naive-ui': ['naive-ui'],
+            'lodash-es': ['lodash-es'],
+            'vue-router': ['vue-router'],
+            'vue-quill': ['@vueup/vue-quill'],
+            'vicons-antd': ['@vicons/antd'],
+            'vicons-ionicons5': ['@vicons/ionicons5'],
+            vuedraggable: ['vuedraggable'],
+            echarts: ['echarts'],
+            vueuse: ['@vueuse/core'],
+            vue: ['vue'],
+            pinia: ['pinia'],
+          },
+        },
+      },
+    },
+  };
+};

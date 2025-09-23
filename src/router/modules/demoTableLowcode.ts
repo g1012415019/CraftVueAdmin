@@ -1,13 +1,13 @@
 import type { RouteRecordRaw } from 'vue-router';
-import { LAYOUT } from '../constant';
+import { Layout } from '../constant';
 
 const demoTableLowcode: RouteRecordRaw = {
   path: '/demo/table-lowcode',
   name: 'DemoTableLowcode',
-  component: LAYOUT,
+  component: Layout,
   meta: {
     title: '低代码表格演示',
-    icon: 'ant-design:table-outlined',
+    icon: '',
     orderNo: 100,
   },
   children: [

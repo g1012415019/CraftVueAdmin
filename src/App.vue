@@ -1,70 +1,83 @@
 <template>
-  <NConfigProvider :theme="naiveTheme" :locale="naiveLocale" :date-locale="naiveDateLocale">
-    <NMessageProvider>
-      <NDialogProvider>
-        <NNotificationProvider>
-          <NLoadingBarProvider>
-            <NLayout has-sider>
-              <AppSidebar />
-              <NLayout>
-                <AppHeader />
-                <NLayoutContent>
-                  <RouterView />
-                </NLayoutContent>
-              </NLayout>
-            </NLayout>
-          </NLoadingBarProvider>
-        </NNotificationProvider>
-      </NDialogProvider>
-    </NMessageProvider>
+  <NConfigProvider
+    v-if="!isLock"
+    :locale="zhCN"
+    :theme="getDarkTheme"
+    :theme-overrides="getThemeOverrides"
+    :date-locale="dateZhCN"
+  >
+    <AppProvider>
+      <RouterView />
+    </AppProvider>
   </NConfigProvider>
+
+  <transition v-if="isLock && $route.name !== 'login'" name="slide-up">
+    <LockScreen />
+  </transition>
 </template>
 
-<script setup lang="ts">
-import { darkTheme, zhCN, dateZhCN, enUS, dateEnUS } from 'naive-ui'
-import { useAppStore } from '@/stores/app'
+<script lang="ts" setup>
+  import { computed, onMounted, onUnmounted } from 'vue';
+  import { zhCN, dateZhCN, darkTheme } from 'naive-ui';
+  import { LockScreen } from '@/components/Lockscreen';
+  import { AppProvider } from '@/components/Application';
+  import { useScreenLockStore } from '@/store/modules/screenLock.js';
+  import { useRoute } from 'vue-router';
+  import { useDesignSettingStore } from '@/store/modules/designSetting';
+  import { lighten } from '@/utils/index';
 
-const appStore = useAppStore()
-const { locale } = useI18n()
+  const route = useRoute();
+  const useScreenLock = useScreenLockStore();
+  const designStore = useDesignSettingStore();
+  const isLock = computed(() => useScreenLock.isLocked);
+  const lockTime = computed(() => useScreenLock.lockTime);
 
-const naiveTheme = computed(() => 
-  appStore.theme === 'dark' ? darkTheme : null
-)
+  /**
+   * @type import('naive-ui').GlobalThemeOverrides
+   */
+  const getThemeOverrides = computed(() => {
+    const appTheme = designStore.appTheme;
+    const lightenStr = lighten(designStore.appTheme, 6);
+    return {
+      common: {
+        primaryColor: appTheme,
+        primaryColorHover: lightenStr,
+        primaryColorPressed: lightenStr,
+        primaryColorSuppl: appTheme,
+      },
+      LoadingBar: {
+        colorLoading: appTheme,
+      },
+    };
+  });
 
-const naiveLocale = computed(() => 
-  locale.value === 'zh-CN' ? zhCN : enUS
-)
+  const getDarkTheme = computed(() => (designStore.darkTheme ? darkTheme : undefined));
 
-const naiveDateLocale = computed(() => 
-  locale.value === 'zh-CN' ? dateZhCN : dateEnUS
-)
+  let timer: NodeJS.Timer;
 
-// 初始化主题
-onMounted(() => {
-  document.documentElement.setAttribute('data-theme', appStore.theme)
-})
+  const timekeeping = () => {
+    clearInterval(timer);
+    if (route.name == 'login' || isLock.value) return;
+    // 设置不锁屏
+    useScreenLock.setLock(false);
+    // 重置锁屏时间
+    useScreenLock.setLockTime();
+    timer = setInterval(() => {
+      // 锁屏倒计时递减
+      useScreenLock.setLockTime(lockTime.value - 1);
+      if (lockTime.value <= 0) {
+        // 设置锁屏
+        useScreenLock.setLock(true);
+        return clearInterval(timer);
+      }
+    }, 1000);
+  };
 
-// 监听主题变化
-watch(() => appStore.theme, (theme) => {
-  document.documentElement.setAttribute('data-theme', theme)
-})
+  onMounted(() => {
+    document.addEventListener('mousedown', timekeeping);
+  });
+
+  onUnmounted(() => {
+    document.removeEventListener('mousedown', timekeeping);
+  });
 </script>
-
-<style lang="scss">
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg-color-secondary);
-  color: var(--text-color-primary);
-  transition: background-color $transition-normal, color $transition-normal;
-}
-
-#app {
-  height: 100vh;
-}
-</style>

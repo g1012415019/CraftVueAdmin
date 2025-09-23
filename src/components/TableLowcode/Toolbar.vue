@@ -10,14 +10,14 @@
 </template>
 
 <script lang="ts" setup>
-import { NSpace, NButton } from 'naive-ui';
-// Props for toolbar configuration will be added here later
+  import { NSpace, NButton } from 'naive-ui';
+  // Props for toolbar configuration will be added here later
 </script>
 
 <style scoped>
-.table-toolbar {
-  padding: 10px 0;
-  display: flex;
-  justify-content: flex-end; /* Align to right for now */
-}
+  .table-toolbar {
+    padding: 10px 0;
+    display: flex;
+    justify-content: flex-end; /* Align to right for now */
+  }
 </style>
