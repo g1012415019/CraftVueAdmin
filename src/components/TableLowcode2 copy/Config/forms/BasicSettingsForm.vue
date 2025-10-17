@@ -1,34 +1,34 @@
 <template>
   <div class="basic-settings">
-    <!-- 帮助开关 -->
-    <div class="help-toggle">
-      <n-switch v-model:value="showHelp" size="small" />
-      <span>显示帮助</span>
-    </div>
-    
     <n-form label-placement="left" label-width="70px" size="small">
       
       <!-- 表格外观 -->
       <div class="config-section">
-        <div class="section-title">表格外观</div>
+        <div class="section-header">
+          <div class="section-title">表格外观</div>
+          <div class="help-toggle">
+            <n-switch v-model:value="showHelp" size="small" />
+            <span>显示帮助</span>
+          </div>
+        </div>
         <div class="config-grid">
           <n-form-item label="行高密度">
             <n-button-group size="small">
               <n-button 
-                :type="rowDensity === 'compact' ? 'primary' : 'default'"
-                @click="rowDensity = 'compact'"
+                :type="config.basic.rowDensity === 'compact' ? 'primary' : 'default'"
+                @click="config.basic.rowDensity = 'compact'"
               >紧凑</n-button>
               <n-button 
-                :type="rowDensity === 'medium' ? 'primary' : 'default'"
-                @click="rowDensity = 'medium'"
+                :type="config.basic.rowDensity === 'medium' ? 'primary' : 'default'"
+                @click="config.basic.rowDensity = 'medium'"
               >中等</n-button>
               <n-button 
-                :type="rowDensity === 'high' ? 'primary' : 'default'"
-                @click="rowDensity = 'high'"
+                :type="config.basic.rowDensity === 'high' ? 'primary' : 'default'"
+                @click="config.basic.rowDensity = 'high'"
               >高</n-button>
               <n-button 
-                :type="rowDensity === 'ultra' ? 'primary' : 'default'"
-                @click="rowDensity = 'ultra'"
+                :type="config.basic.rowDensity === 'ultra' ? 'primary' : 'default'"
+                @click="config.basic.rowDensity = 'ultra'"
               >超高</n-button>
             </n-button-group>
           </n-form-item>
@@ -36,7 +36,7 @@
           <n-form-item label="自定义行高">
             <div class="input-with-unit">
               <n-input-number 
-                v-model:value="customRowHeight" 
+                v-model:value="config.basic.customRowHeight" 
                 :min="24" 
                 :max="80" 
                 :step="4"
@@ -51,20 +51,106 @@
             <n-switch v-model:value="config.basic.showRowNumber" size="small" />
           </n-form-item>
           
+          <n-form-item label="启用选择">
+            <n-switch v-model:value="config.selection.enabled" size="small" />
+          </n-form-item>
+          
           <n-form-item label="显示垂直线">
-            <n-switch v-model:value="config.basic.bordered" size="small" />
+            <n-switch 
+              v-model:value="config.basic.bordered" 
+              size="small" 
+              :disabled="config.interaction?.mode === 'spreadsheet'"
+            />
+            <span v-if="config.interaction?.mode === 'spreadsheet'" style="margin-left: 8px; color: #999; font-size: 12px;">
+              电子表格模式下强制启用
+            </span>
           </n-form-item>
           
           <n-form-item label="交替行颜色">
-            <n-switch v-model:value="config.basic.striped" size="small" />
+            <n-switch 
+              v-model:value="config.basic.striped" 
+              size="small" 
+              :disabled="config.interaction?.mode === 'spreadsheet'"
+            />
+            <span v-if="config.interaction?.mode === 'spreadsheet'" style="margin-left: 8px; color: #999; font-size: 12px;">
+              电子表格模式下强制启用
+            </span>
           </n-form-item>
           
           <n-form-item label="标题行换行">
-            <n-switch v-model:value="headerTextWrap" size="small" />
+            <n-switch v-model:value="config.basic.headerTextWrap" size="small" />
           </n-form-item>
           
           <n-form-item label="显示汇总行">
-            <n-switch v-model:value="showSummaryRow" size="small" />
+            <n-switch v-model:value="config.basic.showSummaryRow" size="small" />
+          </n-form-item>
+        </div>
+      </div>
+
+      <!-- 操作栏设置 -->
+      <div class="config-section">
+        <div class="section-header">
+          <div class="section-title">操作栏设置</div>
+        </div>
+        <div class="config-grid">
+          <n-form-item label="显示操作栏">
+            <n-switch v-model:value="config.actionBar.enabled" size="small" />
+          </n-form-item>
+          
+          <n-form-item label="显示新增按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showCreate" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示导入按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showImport" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示导出按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showExport" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示刷新按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showRefresh" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示打印按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showPrint" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示全屏按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showFullscreen" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
+          </n-form-item>
+          
+          <n-form-item label="显示设置按钮">
+            <n-switch 
+              v-model:value="config.actionBar.showConfig" 
+              size="small" 
+              :disabled="!config.actionBar.enabled"
+            />
           </n-form-item>
         </div>
         
@@ -77,6 +163,9 @@
           </div>
           <div class="help-item">
             <strong>显示序号：</strong>在表格第一列显示行号
+          </div>
+          <div class="help-item">
+            <strong>启用选择：</strong>开启后显示复选框，支持行选择功能
           </div>
           <div class="help-item">
             <strong>显示垂直线：</strong>在列之间显示分隔线
@@ -92,7 +181,7 @@
         <div class="section-title">交互方式</div>
         <div class="config-grid">
           <n-form-item label="交互模式" class="full-width">
-            <n-radio-group v-model:value="interactionMode" size="small">
+            <n-radio-group v-model:value="config.interaction.mode" size="small">
               <n-space>
                 <n-radio value="classic">经典模式</n-radio>
                 <n-radio value="spreadsheet">电子表格模式</n-radio>
@@ -101,15 +190,15 @@
           </n-form-item>
           
           <n-form-item label="记录快捷方式">
-            <n-switch v-model:value="showRecordShortcut" size="small" />
+            <n-switch v-model:value="config.interaction.showRecordShortcut" size="small" />
           </n-form-item>
           
           <n-form-item label="行内编辑">
-            <n-switch v-model:value="allowInlineEdit" size="small" />
+            <n-switch v-model:value="config.editing.inlineEditingEnabled" size="small" />
           </n-form-item>
           
           <n-form-item label="右键菜单">
-            <n-switch v-model:value="enableContextMenu" size="small" />
+            <n-switch v-model:value="config.interaction.enableContextMenu" size="small" />
           </n-form-item>
         </div>
         
@@ -134,27 +223,27 @@
         <div class="section-title">数据操作</div>
         <div class="config-grid">
           <n-form-item label="显示创建按钮">
-            <n-switch v-model:value="showCreateButton" size="small" />
+            <n-switch v-model:value="config.actions.showCreateButton" size="small" />
           </n-form-item>
           
           <n-form-item label="Excel导入">
-            <n-switch v-model:value="excelImport" size="small" />
+            <n-switch v-model:value="config.actions.excelImport" size="small" />
           </n-form-item>
           
           <n-form-item label="回收站">
-            <n-switch v-model:value="recycleBin" size="small" />
+            <n-switch v-model:value="config.actions.recycleBin" size="small" />
           </n-form-item>
           
           <n-form-item label="编辑">
-            <n-switch v-model:value="allowEdit" size="small" />
+            <n-switch v-model:value="config.actions.allowEdit" size="small" />
           </n-form-item>
           
           <n-form-item label="复制">
-            <n-switch v-model:value="allowCopy" size="small" />
+            <n-switch v-model:value="config.actions.allowCopy" size="small" />
           </n-form-item>
           
           <n-form-item label="批量操作">
-            <n-switch v-model:value="batchOperations" size="small" />
+            <n-switch v-model:value="config.actions.batchOperations" size="small" />
           </n-form-item>
         </div>
         
@@ -179,11 +268,11 @@
         <div class="section-title">导出打印</div>
         <div class="config-grid">
           <n-form-item label="系统打印">
-            <n-switch v-model:value="systemPrint" size="small" />
+            <n-switch v-model:value="config.actions.systemPrint" size="small" />
           </n-form-item>
           
           <n-form-item label="数据导出">
-            <n-switch v-model:value="allowExport" size="small" />
+            <n-switch v-model:value="config.actions.allowExport" size="small" />
           </n-form-item>
         </div>
         
@@ -202,12 +291,12 @@
         <div class="section-title">自动刷新</div>
         <div class="config-grid">
           <n-form-item label="自动刷新">
-            <n-switch v-model:value="autoRefresh" size="small" />
+            <n-switch v-model:value="config.autoRefresh.enabled" size="small" />
           </n-form-item>
           
-          <n-form-item label="刷新间隔" v-if="autoRefresh">
+          <n-form-item label="刷新间隔" v-if="config.autoRefresh.enabled">
             <div class="input-with-unit">
-              <n-input-number v-model:value="refreshInterval" :min="10" :max="300" size="small" style="width: 80px;" />
+              <n-input-number v-model:value="config.autoRefresh.interval" :min="10" :max="300" size="small" style="width: 80px;" />
               <span>秒</span>
             </div>
           </n-form-item>
@@ -235,58 +324,61 @@ const config = inject('tableConfig') as Ref<any>;
 // 帮助显示控制
 const showHelp = ref(false);
 
-// 表格外观
-const rowDensity = ref('medium');
-const customRowHeight = ref(36);
-const headerTextWrap = ref(false);
-const showSummaryRow = ref(false);
+// 初始化配置对象结构
+const initConfig = () => {
+  if (!config.value.basic) config.value.basic = {};
+  if (!config.value.interaction) config.value.interaction = {};
+  if (!config.value.editing) config.value.editing = {};
+  if (!config.value.actions) config.value.actions = {};
+  if (!config.value.autoRefresh) config.value.autoRefresh = {};
+  if (!config.value.selection) config.value.selection = {};
+  if (!config.value.actionBar) config.value.actionBar = {};
+  
+  // 设置默认值
+  if (config.value.basic.rowDensity === undefined) config.value.basic.rowDensity = 'medium';
+  if (config.value.basic.rowHeight === undefined) config.value.basic.rowHeight = 36;
+  if (config.value.interaction.mode === undefined) config.value.interaction.mode = 'classic';
+  if (config.value.autoRefresh.enabled === undefined) config.value.autoRefresh.enabled = false;
+  
+  // ActionBar 默认值
+  if (config.value.actionBar.enabled === undefined) config.value.actionBar.enabled = true;
+  if (config.value.actionBar.showCreate === undefined) config.value.actionBar.showCreate = true;
+  if (config.value.actionBar.showImport === undefined) config.value.actionBar.showImport = true;
+  if (config.value.actionBar.showExport === undefined) config.value.actionBar.showExport = true;
+  if (config.value.actionBar.showRefresh === undefined) config.value.actionBar.showRefresh = true;
+  if (config.value.actionBar.showPrint === undefined) config.value.actionBar.showPrint = true;
+  if (config.value.actionBar.showFullscreen === undefined) config.value.actionBar.showFullscreen = true;
+  if (config.value.actionBar.showConfig === undefined) config.value.actionBar.showConfig = true;
+  if (config.value.autoRefresh.interval === undefined) config.value.autoRefresh.interval = 30;
+};
 
-// 交互方式
-const interactionMode = ref('classic');
-const showRecordShortcut = ref(false);
-const allowInlineEdit = ref(false);
-const enableContextMenu = ref(true);
+// 初始化配置
+initConfig();
 
-// 数据操作
-const showCreateButton = ref(true);
-const excelImport = ref(true);
-const recycleBin = ref(true);
-const allowEdit = ref(true);
-const allowCopy = ref(true);
-const batchOperations = ref(true);
-
-// 导出打印
-const systemPrint = ref(true);
-const allowExport = ref(true);
-
-// 自动刷新
-const autoRefresh = ref(false);
-const refreshInterval = ref(30);
+// 监听自定义行高变化
+watch(() => config.value.basic?.customRowHeight, (newHeight) => {
+  if (newHeight) {
+    config.value.basic.rowHeight = newHeight;
+  }
+});
 
 // 监听行高密度变化
-watch(rowDensity, (newDensity) => {
+watch(() => config.value.basic?.rowDensity, (newDensity) => {
   const densityMap = {
     compact: { rowHeight: 28, compact: true },
     medium: { rowHeight: 36, compact: false },
     high: { rowHeight: 44, compact: false },
-    ultra: { rowHeight: 56, compact: false }
+    ultra: { rowHeight: 52, compact: false }
   };
   
-  if (densityMap[newDensity]) {
-    Object.assign(config.value.basic, densityMap[newDensity]);
-    customRowHeight.value = densityMap[newDensity].rowHeight;
+  const setting = densityMap[newDensity];
+  if (setting && !config.value.basic?.customRowHeight) {
+    config.value.basic.rowHeight = setting.rowHeight;
+    config.value.basic.compact = setting.compact;
   }
 });
 
-// 监听自定义行高变化
-watch(customRowHeight, (newHeight) => {
-  config.value.basic.rowHeight = newHeight;
-});
-
-// 初始化默认值
-if (!config.value.basic.rowHeight) {
-  config.value.basic.rowHeight = 36;
-}
+// 移除初始化默认值的重复代码
 </script>
 
 <style scoped>
@@ -299,6 +391,13 @@ if (!config.value.basic.rowHeight) {
   margin-bottom: 16px;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .section-title {
   font-size: 14px;
   font-weight: 500;
@@ -306,6 +405,19 @@ if (!config.value.basic.rowHeight) {
   margin-bottom: 8px;
   padding-bottom: 4px;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.section-header .section-title {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.help-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
 }
 
 .config-grid {

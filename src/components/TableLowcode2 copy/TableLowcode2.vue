@@ -20,15 +20,24 @@
       
       <PaginationBar
         :total-count="totalCount"
-        :filtered-count="filteredCount"
         :current-page="currentPage"
         :current-page-size="currentPageSize"
         :page-count="pageCount"
-        @refresh="handleRefreshView"
         @page-change="currentPage = $event"
         @page-size-change="currentPageSize = $event"
       />
     </div>
+
+    <!-- 顶部操作区域 -->
+    <ActionBar
+      @create="handleCreate"
+      @import="handleImport"
+      @export="handleExport"
+      @refresh="handleRefreshView"
+      @print="handlePrint"
+      @fullscreen="handleFullscreen"
+      @config="emit('openConfig')"
+    />
 
     <!-- 筛选控制区 -->
     <FilterSection
@@ -64,8 +73,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, computed, provide, onMounted, onUnmounted, type Ref } from 'vue'
+import { ref, inject, provide, onMounted, onUnmounted, type Ref } from 'vue'
 import ViewManager from './components/ViewManager.vue'
+import ActionBar from './components/ActionBar.vue'
 import PaginationBar from './components/PaginationBar.vue'
 import FilterSection from './components/FilterSection.vue'
 import TableSection from './components/TableSection.vue'
@@ -95,7 +105,6 @@ const {
 
 const {
   totalCount,
-  filteredCount,
   currentPage,
   currentPageSize,
   pageCount,
@@ -122,6 +131,17 @@ const {
   handleFullscreen,
   updateCheckedRowKeys
 } = useTableActions(config)
+
+// 导入导出处理
+const handleImport = (type: string) => {
+  console.log('导入:', type)
+  config.value.events?.onImport?.(type)
+}
+
+const handleExport = (type: string) => {
+  console.log('导出:', type)
+  config.value.events?.onExport?.(type)
+}
 
 // 键盘快捷键
 const handleKeydown = (event: KeyboardEvent) => {

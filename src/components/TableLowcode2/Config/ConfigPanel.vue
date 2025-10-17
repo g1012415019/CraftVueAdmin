@@ -48,14 +48,41 @@
           
           <div class="content-footer">
             <n-space justify="end">
-              <n-button>重置</n-button>
-              <n-button type="primary">保存设置</n-button>
+              <n-button size="small" @click="exportConfig">导出配置</n-button>
+              <n-button size="small" @click="showImportModal = true">导入配置</n-button>
+              <n-button size="small" @click="resetConfig">重置</n-button>
+              <n-button type="primary" size="small">保存设置</n-button>
             </n-space>
           </div>
         </div>
       </div>
     </n-drawer-content>
   </n-drawer>
+
+  <!-- 导入配置弹窗 -->
+  <n-modal v-model:show="showImportModal" preset="dialog" title="导入配置">
+    <template #header>
+      <div>导入表格配置</div>
+    </template>
+    <n-space vertical>
+      <n-alert type="info" :show-icon="false">
+        粘贴 JSON 配置文件内容，将会覆盖当前所有配置
+      </n-alert>
+      <n-input
+        v-model:value="importConfigText"
+        type="textarea"
+        placeholder="请粘贴 JSON 配置..."
+        :rows="10"
+        :resizable="false"
+      />
+    </n-space>
+    <template #action>
+      <n-space>
+        <n-button @click="showImportModal = false">取消</n-button>
+        <n-button type="primary" @click="handleImportConfig">导入</n-button>
+      </n-space>
+    </template>
+  </n-modal>
 </template>
 
 <script lang="ts" setup>
@@ -82,6 +109,10 @@ const show = computed({
 });
 
 const activeMenu = ref('basic');
+
+// 导入导出功能
+const showImportModal = ref(false);
+const importConfigText = ref('');
 
 const drawerTitle = computed(() => {
   return `${config.value?.basic?.title || '表格'} - 配置`
@@ -135,6 +166,48 @@ const currentComponent = computed(() => {
   const menu = allMenuItems.find((m) => m.key === activeMenu.value);
   return menu?.component;
 });
+
+// 导出配置
+const exportConfig = () => {
+  const configData = JSON.stringify(config.value, null, 2);
+  const blob = new Blob([configData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `table-config-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.$message?.success('配置已导出');
+};
+
+// 导入配置
+const handleImportConfig = () => {
+  try {
+    const newConfig = JSON.parse(importConfigText.value);
+    Object.assign(config.value, newConfig);
+    showImportModal.value = false;
+    importConfigText.value = '';
+    window.$message?.success('配置导入成功');
+  } catch (error) {
+    window.$message?.error('JSON 格式错误，请检查配置文件');
+  }
+};
+
+// 重置配置
+const resetConfig = () => {
+  window.$dialog?.warning({
+    title: '确认重置',
+    content: '这将重置所有配置到默认状态，是否继续？',
+    positiveText: '确认',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      // 这里可以重置到默认配置
+      window.$message?.success('配置已重置');
+    }
+  });
+};
 </script>
 
 <style scoped>

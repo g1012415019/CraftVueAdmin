@@ -11,45 +11,47 @@
         :row-key="rowKey"
         :scroll-x="config.basic.scrollX || undefined"
         :scroll-y="config.basic.maxHeight || config.basic.height || undefined"
-        :bordered="config.basic.bordered"
-        :single-line="!config.basic.striped"
+        :bordered="config.basic.bordered || config.interaction?.mode === 'spreadsheet'"
+        :single-line="config.interaction?.mode === 'spreadsheet' ? false : !config.basic.striped"
         :row-props="rowProps"
         :max-height="config.basic.maxHeight || undefined"
         :height="config.basic.height || undefined"
-        :size="config.basic.compact ? 'small' : 'medium'"
-        :striped="config.basic.striped"
-        :style="{
-          '--n-font-size': config.basic.fontSize + 'px',
-          '--n-th-height': config.basic.rowHeight + 'px',
-          '--n-td-height': config.basic.rowHeight + 'px',
-          '--n-merged-th-height': config.basic.rowHeight + 'px',
-          '--n-merged-td-height': config.basic.rowHeight + 'px',
-        }"
+        :size="getTableSize()"
+        :striped="config.basic.striped || config.interaction?.mode === 'spreadsheet'"
+        :style="getTableStyle()"
         @update:sorter="handleSorterChange"
         @update:filters="handleFiltersChange"
         :checked-row-keys="checkedRowKeys"
         @update:checked-row-keys="handleUpdateCheckedRowKeys"
-        :row-class-name="(row) => {
-          let className = rowClassName(row);
-          if (selectedRowData === row) {
-            className += ' selected-row';
-          }
-          return className;
-        }"
+        :row-class-name="getRowClassName"
+        :allow-checking-not-loaded="config.selection.allowCheckingNotLoaded"
+        :cascade="config.selection.cascade"
+        :children-key="config.basic.childrenKey"
+        :default-expand-all="config.basic.defaultExpandAll"
+        :indent="config.basic.indent"
+        :flex-height="config.basic.flexHeight"
+        :summary="config.basic.showSummaryRow ? getSummaryData : undefined"
+        :render-cell="config.basic.renderCell"
+        :render-expand-icon="config.basic.renderExpandIcon"
+        @click="handleTableClick"
       />
     </div>
 
     <!-- 右键菜单已移除 -->
     
-    <!-- 悬浮操作栏 -->
-    <FloatingActionBar
-      :show="showFloatingBar"
-      :x="floatingBarX"
-      :y="floatingBarY"
-      :current-row="currentHoveredRow"
-      :actions="config.actions.inline || []"
-      @action="handleFloatingAction"
+    <!-- 右键菜单 -->
+    <n-dropdown
+      placement="bottom-start"
+      trigger="manual"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :options="contextMenuOptions"
+      :show="showContextMenu"
+      :on-clickoutside="hideContextMenu"
+      @select="handleContextMenuSelect"
     />
+    
+    <!-- 悬浮操作栏已移除 -->
 
     <!-- 列头下拉菜单 -->
     <ColumnHeaderDropdown
@@ -65,18 +67,27 @@
   </div>
 </template>
 
+<style scoped>
+/* 电子表格模式单元格选中样式 */
+:deep(.n-data-table td.selected-cell) {
+  background-color: #e6f7ff !important;
+  border: 2px solid #1890ff !important;
+}
+</style>
+
 <script setup lang="ts">
-import { inject, onMounted, ref } from 'vue';
-import { useTableData } from '@/components/TableLowcode2/Table/composables/useTableData';
-import { useTableEditing } from '@/components/TableLowcode2/Table/composables/useTableEditing';
-import { useTableContextMenu } from '@/components/TableLowcode2/Table/composables/useTableContextMenu';
-import { useTableRowInteraction } from '@/components/TableLowcode2/Table/composables/useTableRowInteraction';
-import { useTableColumns } from '@/components/TableLowcode2/Table/composables/useTableColumns';
-import { useColumnDropdown } from '@/components/TableLowcode2/Table/composables/useColumnDropdown';
-import { useFloatingActionBar } from '@/components/TableLowcode2/Table/composables/useFloatingActionBar';
+import { inject, onMounted, ref, computed, h } from 'vue';
+import { useTableData } from '@/components/TableLowcode2/Table/composables/useTableData.tsx';
+import { useTableEditing } from '@/components/TableLowcode2/Table/composables/useTableEditing.tsx';
+import { useTableContextMenu } from '@/components/TableLowcode2/Table/composables/useTableContextMenu.tsx';
+import { useTableRowInteraction } from '@/components/TableLowcode2/Table/composables/useTableRowInteraction.tsx';
+import { useTableColumns } from '@/components/TableLowcode2/Table/composables/useTableColumns.tsx';
+import { useColumnDropdown } from '@/components/TableLowcode2/Table/composables/useColumnDropdown.tsx';
+import { useFloatingActionBar } from '@/components/TableLowcode2/Table/composables/useFloatingActionBar.tsx';
+
+import { useAutoRefresh } from '@/components/TableLowcode2/Table/composables/useAutoRefresh.tsx';
 
 import ColumnHeaderDropdown from '@/components/TableLowcode2/Table/ColumnHeaderDropdown.vue';
-import FloatingActionBar from '@/components/TableLowcode2/Table/FloatingActionBar.vue';
 import { TableConfig } from '@/types/table';
 import type { DataTableRowKey } from 'naive-ui';
 
@@ -120,25 +131,78 @@ const {
 } = useTableEditing(tableData);
 
 const {
-  showDropdown,
-  dropdownX,
-  dropdownY,
-  rightClickedRow,
+  showContextMenu,
+  contextMenuX,
+  contextMenuY,
+  currentRow,
   handleContextMenu,
-  onClickoutside,
-  contextMenuOptions,
-  handleMenuSelect,
+  hideContextMenu
 } = useTableContextMenu();
 
-const {
-  showFloatingBar,
-  floatingBarX,
-  floatingBarY,
-  currentHoveredRow,
-  handleRowHover,
-  handleRowLeave,
-  handleFloatingAction,
-} = useFloatingActionBar();
+// 右键菜单选项
+const contextMenuOptions = computed(() => [
+  {
+    label: '编辑',
+    key: 'edit',
+    icon: () => h('i', { class: 'i-mdi-pencil' })
+  },
+  {
+    label: '删除',
+    key: 'delete',
+    icon: () => h('i', { class: 'i-mdi-delete' })
+  },
+  {
+    type: 'divider',
+    key: 'd1'
+  },
+  {
+    label: '复制',
+    key: 'copy',
+    icon: () => h('i', { class: 'i-mdi-content-copy' })
+  },
+  {
+    label: '查看详情',
+    key: 'detail',
+    icon: () => h('i', { class: 'i-mdi-eye' })
+  }
+]);
+
+// 右键菜单选择处理
+const handleContextMenuSelect = (key: string) => {
+  if (!currentRow.value) return;
+  
+  switch (key) {
+    case 'edit':
+      console.log('编辑行:', currentRow.value);
+      config.events?.onEdit?.(currentRow.value);
+      break;
+    case 'delete':
+      console.log('删除行:', currentRow.value);
+      config.events?.onDelete?.(currentRow.value);
+      break;
+    case 'copy':
+      console.log('复制行:', currentRow.value);
+      // 复制到剪贴板
+      navigator.clipboard?.writeText(JSON.stringify(currentRow.value));
+      break;
+    case 'detail':
+      console.log('查看详情:', currentRow.value);
+      config.events?.onRecordDetail?.(currentRow.value);
+      break;
+  }
+  
+  hideContextMenu();
+};
+
+// const {
+//   showFloatingBar,
+//   floatingBarX,
+//   floatingBarY,
+//   currentHoveredRow,
+//   handleRowHover,
+//   handleRowLeave,
+//   handleFloatingAction,
+// } = useFloatingActionBar();
 
 const {
   rowProps,
@@ -146,7 +210,15 @@ const {
   moveRowUp,
   moveRowDown,
   hoveredRowKey,
-} = useTableRowInteraction(tableData, startEdit, handleContextMenu, editingRowKey, handleRowHover, handleRowLeave);
+  selectedCell,
+  selectedRowKey,
+  handleCellClick,
+  handleCellDoubleClick,
+  openRecordDetail,
+} = useTableRowInteraction(tableData, startEdit, handleContextMenu, editingRowKey, null, null);
+
+// 将选中状态暴露给全局，供单元格使用
+window.tableSelectedCell = selectedCell;
 
 const {
   showDropdown: showColumnDropdown,
@@ -174,11 +246,58 @@ const {
   handleUpdateCheckedRowKeys,
   tableData,
   hoveredRowKey,
-  handleDropdownClick
+  handleDropdownClick,
+  selectedCell
 );
+
+const {
+  isRefreshing,
+  manualRefresh
+} = useAutoRefresh(fetchData);
+
+// 表格点击处理
+const handleTableClick = (e: MouseEvent) => {
+  if (config.value.interaction?.mode !== 'spreadsheet') return
+  
+  const target = e.target as HTMLElement
+  const cell = target.closest('td')
+  if (!cell) return
+  
+  const row = cell.closest('tr')
+  if (!row) return
+  
+  // 移除之前的选中样式
+  document.querySelectorAll('.selected-cell').forEach(el => {
+    el.classList.remove('selected-cell')
+  })
+  
+  const rowIndex = Array.from(row.parentElement!.children).indexOf(row)
+  const cellIndex = Array.from(row.children).indexOf(cell)
+  
+  if (rowIndex >= 0 && cellIndex >= 0 && tableData.value[rowIndex]) {
+    const rowData = tableData.value[rowIndex]
+    const columnData = columns.value[cellIndex]
+    
+    if (columnData && columnData.key !== 'row-index-selection' && columnData.key !== 'actions') {
+      selectedCell.value = { rowKey: rowData.key, columnKey: columnData.key }
+      // 添加选中样式到当前单元格
+      cell.classList.add('selected-cell')
+      console.log('单元格选中:', rowData.key, columnData.key)
+    }
+  }
+}
 
 // 行键函数
 const rowKey = (row: any) => row.key;
+
+// 调试信息
+onMounted(() => {
+  console.log('DataTable mounted');
+  console.log('selectedCell:', selectedCell.value);
+  console.log('Config interaction mode:', config.value.interaction?.mode);
+  console.log('Columns:', columns.value);
+});
+
 const handleTableMouseOver = (e: MouseEvent) => {
   const target = e.target as HTMLElement;
   const row = target.closest('tr[data-key]');
@@ -203,6 +322,89 @@ const handleRowClick = (row: any) => {
 
 const getSelectedRows = () => {
   return tableData.value.filter(row => checkedRowKeys.value.includes(row.key));
+};
+
+// 获取表格尺寸
+const getTableSize = () => {
+  if (config.value.basic.compact) return 'small';
+  if (config.value.basic.size) return config.value.basic.size;
+  return 'medium';
+};
+
+// 获取表格样式
+const getTableStyle = () => {
+  const rowHeight = getRowHeight();
+  return {
+    '--n-font-size': config.value.basic.fontSize + 'px',
+    '--n-th-height': rowHeight + 'px',
+    '--n-td-height': rowHeight + 'px',
+    '--n-merged-th-height': rowHeight + 'px',
+    '--n-merged-td-height': rowHeight + 'px',
+  };
+};
+
+// 获取行高
+const getRowHeight = () => {
+  // 优先使用自定义行高
+  if (config.value.basic?.customRowHeight) {
+    return config.value.basic.customRowHeight;
+  }
+  
+  // 使用配置中的行高
+  if (config.value.basic?.rowHeight) {
+    return config.value.basic.rowHeight;
+  }
+  
+  // 根据密度计算行高
+  const densityMap = {
+    compact: 28,
+    medium: 36,
+    high: 44,
+    ultra: 52
+  };
+  
+  return densityMap[config.value.basic?.rowDensity] || 36;
+};
+
+// 获取行类名
+const getRowClassName = (row) => {
+  let className = rowClassName.value(row);
+  if (selectedRowData.value === row) {
+    className += ' selected-row';
+  }
+  return className;
+};
+
+// 获取汇总数据
+const getSummaryData = () => {
+  if (!config.value.basic.showSummaryRow) return undefined;
+  
+  // 这里可以根据配置计算汇总数据
+  const summary = {};
+  config.value.columns.forEach(col => {
+    if (col.summaryType) {
+      switch (col.summaryType) {
+        case 'sum':
+          summary[col.key] = tableData.value.reduce((sum, row) => sum + (Number(row[col.key]) || 0), 0);
+          break;
+        case 'avg':
+          const values = tableData.value.map(row => Number(row[col.key]) || 0);
+          summary[col.key] = values.reduce((sum, val) => sum + val, 0) / values.length;
+          break;
+        case 'count':
+          summary[col.key] = tableData.value.length;
+          break;
+        case 'max':
+          summary[col.key] = Math.max(...tableData.value.map(row => Number(row[col.key]) || 0));
+          break;
+        case 'min':
+          summary[col.key] = Math.min(...tableData.value.map(row => Number(row[col.key]) || 0));
+          break;
+      }
+    }
+  });
+  
+  return summary;
 };
 </script>
 
