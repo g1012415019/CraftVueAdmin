@@ -5,8 +5,11 @@ import { wrapperEnv } from './build/utils';
 import { createVitePlugins } from './build/vite/plugin';
 import { OUTPUT_DIR } from './build/constant';
 import { createProxy } from './build/vite/proxy';
-import pkg from './package.json';
+import { readFileSync } from 'fs';
 import { format } from 'date-fns';
+
+// 读取 package.json
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const { dependencies, devDependencies, name, version } = pkg;
 
 const __APP_INFO__ = {
