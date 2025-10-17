@@ -2,337 +2,188 @@
   <div class="pagination-settings">
     <n-form label-placement="left" label-width="100px" size="small">
       
-      <!-- 分页开关 -->
-      <n-card title="分页开关" size="small" class="mb-1">
-        <n-form-item label="启用分页">
-          <n-switch v-model:value="config.pagination.enabled" size="small" />
-        </n-form-item>
-        <n-text depth="2" style="font-size: 12px;">
-          关闭后将显示所有数据，不进行分页
-        </n-text>
-      </n-card>
-
-      <!-- 基础设置 -->
-      <n-card v-if="config.pagination.enabled" title="基础设置" size="small" class="mb-1">
-        <n-alert type="info" :show-icon="false" style="margin-bottom: 12px; font-size: 12px;">
-          配置分页器的基本显示和行为
-        </n-alert>
-        
-        <n-grid :cols="2" :x-gap="12" :y-gap="8">
-          <n-gi>
-            <n-form-item label="每页条数" label-width="60px">
-              <n-input-number
-                v-model:value="config.pagination.pageSize"
-                :min="1"
-                :max="1000"
+      <!-- 分页配置 -->
+      <div class="config-section">
+        <div class="section-header">
+          <div class="section-title">分页配置</div>
+          <div class="help-toggle">
+            <n-switch v-model:value="showHelp" size="small" />
+            <span>显示帮助</span>
+          </div>
+        </div>
+        <div class="config-grid">
+          <n-form-item label="启用">
+            <n-switch v-model:value="config.pagination.enabled" size="small" />
+          </n-form-item>
+          
+          <template v-if="config.pagination.enabled">
+            <n-form-item label="总数">
+              <n-switch v-model:value="config.pagination.showTotal" size="small" />
+            </n-form-item>
+            
+            <n-form-item label="大小">
+              <n-button-group size="small">
+                <n-button 
+                  :type="config.pagination.size === 'small' ? 'primary' : 'default'"
+                  @click="config.pagination.size = 'small'"
+                >小</n-button>
+                <n-button 
+                  :type="config.pagination.size === 'medium' ? 'primary' : 'default'"
+                  @click="config.pagination.size = 'medium'"
+                >中</n-button>
+                <n-button 
+                  :type="config.pagination.size === 'large' ? 'primary' : 'default'"
+                  @click="config.pagination.size = 'large'"
+                >大</n-button>
+              </n-button-group>
+            </n-form-item>
+            
+            <n-form-item label="每页选项">
+              <n-dynamic-tags 
+                v-model:value="config.pagination.pageSizeOptions" 
+                :max="6"
                 size="small"
-                placeholder="20"
+                type="primary"
               />
             </n-form-item>
-          </n-gi>
-          <n-gi>
-            <n-form-item label="分页器大小" label-width="70px">
+            
+            <n-form-item label="默认每页">
               <n-select
-                v-model:value="config.pagination.size"
-                :options="sizeOptions"
+                v-model:value="config.pagination.defaultPageSize"
+                :options="pageSizeSelectOptions"
                 size="small"
+                style="width: 100px"
               />
             </n-form-item>
-          </n-gi>
-        </n-grid>
-      </n-card>
-
-      <!-- 显示设置 -->
-      <n-card v-if="config.pagination.enabled" title="显示设置" size="small" class="mb-1">
-        <n-grid :cols="1" :y-gap="12">
-          <n-gi>
-            <n-form-item label="分页器位置">
-              <n-radio-group v-model:value="config.pagination.position" size="small">
-                <n-radio-button
-                  v-for="option in positionOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </n-radio-button>
-              </n-radio-group>
-            </n-form-item>
-          </n-gi>
-          
-          <n-gi>
-            <n-form-item label="显示模式">
-              <n-radio-group v-model:value="config.pagination.simple" size="small">
-                <n-radio-button :value="false">完整模式</n-radio-button>
-                <n-radio-button :value="true">简洁模式</n-radio-button>
-              </n-radio-group>
-            </n-form-item>
-          </n-gi>
-        </n-grid>
-      </n-card>
-
-      <!-- 功能开关 -->
-      <n-card v-if="config.pagination.enabled" title="功能开关" size="small" class="mb-1">
-        <!-- 帮助按钮 -->
-        <div v-if="!showHelp" class="help-button-container">
-          <n-button size="small" type="info" text @click="showHelp = true">
-            <template #icon>
-              <n-icon>
-                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-              </n-icon>
-            </template>
-            说明
-          </n-button>
+          </template>
         </div>
-
-        <!-- 帮助面板 -->
-        <div v-if="showHelp" class="help-banner">
-          <div class="help-header">
-            <span>功能说明</span>
-            <n-button size="tiny" text @click="showHelp = false">×</n-button>
+        
+        <div v-if="showHelp" class="help-section">
+          <div class="help-item">
+            <strong>启用：</strong>关闭后将隐藏整个分页器
           </div>
-          <div class="help-content">
-            <div><strong>每页条数选择器：</strong>允许用户切换每页显示条数</div>
-            <div><strong>快速跳转：</strong>显示页码输入框，可直接跳转到指定页</div>
-            <div><strong>禁用状态：</strong>禁用整个分页器的交互功能</div>
+          <div class="help-item">
+            <strong>总数：</strong>控制"共 X 条"文字的显示
+          </div>
+          <div class="help-item">
+            <strong>大小：</strong>控制分页器组件的大小
+          </div>
+          <div class="help-item">
+            <strong>每页选项：</strong>设置每页显示个数的选择器选项
+          </div>
+          <div class="help-item">
+            <strong>默认每页：</strong>设置默认每页显示的条数
           </div>
         </div>
-
-        <n-grid :cols="1" :y-gap="12">
-          <n-gi>
-            <n-form-item label="每页条数选择器">
-              <n-switch v-model:value="config.pagination.showSizePicker" size="small" />
-            </n-form-item>
-          </n-gi>
-          
-          <n-gi>
-            <n-form-item label="快速跳转">
-              <n-switch v-model:value="config.pagination.showQuickJumper" size="small" />
-            </n-form-item>
-          </n-gi>
-          
-          <n-gi>
-            <n-form-item label="禁用状态">
-              <n-switch v-model:value="config.pagination.disabled" size="small" />
-            </n-form-item>
-          </n-gi>
-        </n-grid>
-      </n-card>
-
-      <!-- 每页条数选项 -->
-      <n-card v-if="config.pagination.enabled && config.pagination.showSizePicker" title="每页条数选项" size="small" class="mb-1">
-        <n-form-item label="可选条数">
-          <n-dynamic-tags 
-            v-model:value="config.pagination.pageSizes" 
-            :render-tag="renderPageSizeTag"
-            size="small"
-          />
-        </n-form-item>
-        <n-text depth="2" style="font-size: 12px; margin-top: 8px; display: block;">
-          提示：输入数字后按回车添加，点击标签可删除
-        </n-text>
-      </n-card>
-
-      <!-- 自定义文本 -->
-      <n-card v-if="config.pagination.enabled" title="自定义文本" size="small" class="mb-1">
-        <n-grid :cols="1" :y-gap="8">
-          <n-gi>
-            <n-form-item label="前缀内容">
-              <n-input 
-                v-model:value="config.pagination.prefix" 
-                placeholder="分页器前缀文本" 
-                size="small"
-              />
-            </n-form-item>
-          </n-gi>
-          <n-gi>
-            <n-form-item label="后缀内容">
-              <n-input 
-                v-model:value="config.pagination.suffix" 
-                placeholder="分页器后缀文本" 
-                size="small"
-              />
-            </n-form-item>
-          </n-gi>
-        </n-grid>
-      </n-card>
-
-      <!-- 分页预览 -->
-      <n-card title="配置预览" size="small">
-        <n-text depth="2" style="font-size: 12px;">
-          {{ config.pagination.enabled ? getPaginationPreview() : '分页已关闭，将显示所有数据' }}
-        </n-text>
-      </n-card>
-
+      </div>
     </n-form>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { inject, Ref, ref } from 'vue';
+import { inject, ref, watch, computed } from 'vue';
+
+const config = inject('tableConfig') as Ref<any>;
+
+// 帮助显示控制
+const showHelp = ref(false);
+
+// 计算每页选项的下拉选项
+const pageSizeSelectOptions = computed(() => {
+  return (config.value.pagination.pageSizeOptions || []).map(item => ({
+    label: item,
+    value: parseInt(item)
+  }));
+});
+
+// 初始化配置对象结构
+const initConfig = () => {
+  if (!config.value.pagination) config.value.pagination = {};
   
-  // 注入共享的配置状态
-  const config = inject('tableConfig') as Ref<any>;
-  
-  // 初始化默认值 - 按照 Naive UI 官方默认值
-  if (!config.value.pagination) {
-    config.value.pagination = {
-      enabled: false, // 分页开关
-      page: 1,
-      pageCount: undefined,
-      pageSize: 10,
-      pageSizes: [10, 20, 30, 40],
-      showSizePicker: false,
-      showQuickJumper: false,
-      size: 'medium',
-      itemCount: undefined,
-      simple: false,
-      disabled: false,
-      pageSlot: 9,
-      selectProps: undefined,
-      prev: undefined,
-      next: undefined,
-      goto: undefined,
-      prefix: undefined,
-      suffix: undefined,
-      label: undefined,
-      displayOrder: ['pages', 'size-picker', 'quick-jumper'],
-      to: undefined,
-      showQuickJumpDropdown: true
-    };
-  }
+  // 设置默认值 - 与 PaginationBar.vue 对应
+  if (config.value.pagination.enabled === undefined) config.value.pagination.enabled = true;
+  if (config.value.pagination.showTotal === undefined) config.value.pagination.showTotal = true;
+  if (config.value.pagination.size === undefined) config.value.pagination.size = 'small';
+  if (config.value.pagination.showQuickJumper === undefined) config.value.pagination.showQuickJumper = false;
+  if (config.value.pagination.showSizeChanger === undefined) config.value.pagination.showSizeChanger = false;
+  if (config.value.pagination.pageSizeOptions === undefined) config.value.pagination.pageSizeOptions = ['10', '20', '50', '100'];
+  if (!Array.isArray(config.value.pagination.pageSizeOptions)) config.value.pagination.pageSizeOptions = ['10', '20', '50', '100'];
+  if (config.value.pagination.defaultPageSize === undefined) config.value.pagination.defaultPageSize = 20;
+};
 
-  const showHelp = ref(false);
+// 初始化配置
+initConfig();
 
-  const positionOptions = [
-    { label: '顶部', value: 'top' },
-    { label: '底部', value: 'bottom' },
-    { label: '上下', value: 'both' },
-    { label: '隐藏', value: 'hidden' },
-  ];
-
-  const sizeOptions = [
-    { label: '小', value: 'small' },
-    { label: '中', value: 'medium' },
-    { label: '大', value: 'large' },
-  ];
-
-  const displayOrderOptions = [
-    { label: '页码', value: 'pages' },
-    { label: '每页条数选择器', value: 'size-picker' },
-    { label: '快速跳转', value: 'quick-jumper' },
-  ];
-
-  const renderPageSizeTag = (tag: string) => {
-    return `${tag} 条/页`;
-  };
-
-  const getPaginationPreview = () => {
-    const parts = [];
-    
-    parts.push(`每页 ${config.value.pagination.pageSize} 条`);
-    parts.push(`大小: ${sizeOptions.find(s => s.value === config.value.pagination.size)?.label}`);
-    
-    if (config.value.pagination.simple) {
-      parts.push('简洁模式');
-    }
-    
-    if (config.value.pagination.showSizePicker) {
-      parts.push(`可选条数: ${config.value.pagination.pageSizes.join(', ')}`);
-    }
-    
-    if (config.value.pagination.showQuickJumper) {
-      parts.push('支持快速跳转');
-    }
-    
-    if (config.value.pagination.disabled) {
-      parts.push('已禁用');
-    }
-
-    if (config.value.pagination.pageSlot !== 9) {
-      parts.push(`页码槽位: ${config.value.pagination.pageSlot}`);
-    }
-    
-    return parts.join(' | ');
-  };
+// 监听配置变化
+watch(() => config.value, initConfig, { deep: true });
 </script>
 
 <style scoped>
 .pagination-settings {
-  font-size: 13px;
-  padding: 4px;
+  padding: 16px;
 }
 
-.mb-1 {
-  margin-bottom: 12px;
+.config-section {
+  margin-bottom: 24px;
 }
 
-.help-banner {
-  background: #f0f8ff;
-  border: 1px solid #d4edda;
-  border-radius: 6px;
-  margin-bottom: 12px;
-}
-
-.help-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e0e0e6;
-  font-weight: 500;
-  font-size: 13px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.help-content {
-  padding: 8px 12px;
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.help-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
-  line-height: 1.4;
-}
-
-.help-content div {
-  margin-bottom: 4px;
   color: #666;
 }
 
-.help-button-container {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 10;
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
 }
 
-:deep(.n-card) {
+.config-grid :deep(.n-form-item) {
+  margin-bottom: 0;
+}
+
+.config-grid :deep(.n-form-item-feedback-wrapper) {
+  min-height: 0;
+}
+
+.help-section {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f8f9fa;
   border-radius: 6px;
-  border: 1px solid #e0e0e6;
+  border-left: 3px solid #1890ff;
 }
 
-:deep(.n-card-header) {
-  padding: 12px 16px 8px;
-  font-size: 14px;
-  font-weight: 500;
+.help-item {
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.help-item:last-child {
+  margin-bottom: 0;
+}
+
+.help-item strong {
   color: #333;
-  background: #fafafa;
-  border-bottom: 1px solid #e0e0e6;
-}
-
-:deep(.n-card__content) {
-  padding: 16px;
-  background: white;
-}
-
-:deep(.n-form-item) {
-  margin: 0;
-  min-height: 28px;
-  align-items: center;
-}
-
-:deep(.n-form-item-label) {
-  font-size: 13px;
-  color: #333;
-  white-space: nowrap;
-}
-
-:deep(.n-input), :deep(.n-select) {
-  font-size: 13px;
 }
 </style>

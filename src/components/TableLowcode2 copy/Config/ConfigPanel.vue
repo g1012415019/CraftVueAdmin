@@ -62,8 +62,10 @@
 import { ref, computed } from 'vue';
 import BasicSettingsForm from './forms/BasicSettingsForm.vue';
 import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
+import ActionSettingsForm from './forms/ActionSettingsForm.vue';
 import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
 import SortSettingsForm from './forms/SortSettingsForm.vue';
+import InteractionSettingsForm from './forms/InteractionSettingsForm.vue';
 import FieldSettingsForm from './forms/FieldSettingsForm.vue';
 
 const props = defineProps<{
@@ -125,6 +127,14 @@ const menuGroups = [
     items: [
       { key: 'sort-filter', label: '排序', component: SortSettingsForm },
       { key: 'data', label: '筛选设置', component: FilterListSettingsForm },
+    ]
+  },
+  {
+    key: 'interaction',
+    title: '交互功能',
+    items: [
+      { key: 'interaction', label: '交互设置', component: InteractionSettingsForm },
+      { key: 'actions', label: '操作配置', component: ActionSettingsForm },
     ]
   }
 ];

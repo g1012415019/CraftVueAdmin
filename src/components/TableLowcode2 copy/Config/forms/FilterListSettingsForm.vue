@@ -311,9 +311,6 @@ import { ref, computed, watch, inject } from 'vue';
 // 注入配置
 const config = inject('tableConfig') as any
 
-// 启用筛选列表
-const enableFilterList = ref(false);
-
 // 显示帮助面板
 const showHelp = ref(false);
 

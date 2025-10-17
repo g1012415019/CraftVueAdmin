@@ -1,7 +1,9 @@
 <template>
   <div>
     <TableLowcode2Component @open-config="showConfigPanel = true" />
-    <ConfigPanel v-model:show="showConfigPanel" />
+    <ConfigPanel 
+      v-model:show="showConfigPanel"
+    />
   </div>
 </template>
 
@@ -34,6 +36,137 @@
       rowHeight: 42,
       fontSize: 14,
       headerFixed: true,
+    },
+    // 视图配置
+    views: {
+      presetViews: [
+        { 
+          key: 'all', 
+          label: '全部员工', 
+          count: 1250,
+          description: '显示所有员工记录',
+          icon: '👥',
+          filter: {},
+          badgeType: 'default',
+          config: {
+            basic: {
+              title: '全部员工'
+            }
+          }
+        },
+        { 
+          key: 'active', 
+          label: '在职员工', 
+          count: 1180,
+          description: '显示在职员工',
+          icon: '✅',
+          filter: { status: 'active' },
+          badgeType: 'success',
+          config: {
+            basic: {
+              title: '在职员工'
+            }
+          }
+        },
+        { 
+          key: 'new', 
+          label: '新入职', 
+          count: 23,
+          description: '最近30天入职的员工',
+          icon: '🆕',
+          filter: { joinDate: 'recent30days' },
+          badgeType: 'info',
+          alert: false,
+          config: {
+            basic: {
+              title: '新入职'
+            }
+          }
+        },
+        { 
+          key: 'pending', 
+          label: '待审核', 
+          count: 15,
+          description: '待审核的员工信息',
+          icon: '⏳',
+          filter: { status: 'pending' },
+          badgeType: 'warning',
+          alert: true,
+          config: {
+            basic: {
+              title: '待审核'
+            }
+          }
+        }
+      ]
+    },
+    // 筛选配置
+    filters: {
+      fields: [
+        { 
+          key: 'name', 
+          type: 'text', 
+          position: 'filterBar', 
+          label: '员工姓名', 
+          placeholder: '输入员工姓名搜索' 
+        },
+        { 
+          key: 'status', 
+          type: 'select', 
+          position: 'filterBar', 
+          label: '状态', 
+          options: [
+            { label: '在职', value: 'active' },
+            { label: '离职', value: 'inactive' },
+            { label: '待审核', value: 'pending' }
+          ]
+        },
+        { 
+          key: 'department', 
+          type: 'select', 
+          position: 'filterBar', 
+          label: '部门', 
+          options: [
+            { label: '技术部', value: 'tech' },
+            { label: '销售部', value: 'sales' },
+            { label: '市场部', value: 'marketing' }
+          ]
+        },
+        { 
+          key: 'joinDate', 
+          type: 'dateRange', 
+          position: 'filterBar', 
+          label: '入职时间' 
+        },
+        { 
+          key: 'age', 
+          type: 'numberRange', 
+          position: 'advanced', 
+          label: '年龄范围',
+          min: 18,
+          max: 65
+        },
+        { 
+          key: 'salary', 
+          type: 'slider', 
+          position: 'advanced', 
+          label: '薪资范围',
+          min: 3000,
+          max: 50000
+        },
+        { 
+          key: 'skills', 
+          type: 'multiSelect', 
+          position: 'advanced', 
+          label: '技能标签',
+          options: [
+            { label: 'Vue.js', value: 'vue' },
+            { label: 'React', value: 'react' },
+            { label: 'Node.js', value: 'nodejs' },
+            { label: 'Python', value: 'python' }
+          ]
+        }
+      ]
     },
     selection: {
       enabled: true,
@@ -169,10 +302,55 @@
     actions: {
       create: {
         onClick: () => {
-          window.$message?.success('新增操作');
+          window.$message?.success('新增员工');
         },
       },
-      showInlineColumn: false, // 禁用传统操作列
+      showInlineColumn: false,
+      // 批量操作配置
+      batch: [
+        {
+          key: 'activate',
+          label: '批量激活',
+          type: 'success',
+          icon: 'check',
+          showConfirmation: true,
+          confirmationText: '确定要激活选中的员工吗？',
+          onClick: (selectedRows) => {
+            window.$message?.success(`已激活 ${selectedRows.length} 名员工`);
+          }
+        },
+        {
+          key: 'export',
+          label: '导出数据',
+          type: 'info',
+          icon: 'download',
+          onClick: (selectedRows) => {
+            window.$message?.info(`正在导出 ${selectedRows.length} 条记录`);
+          }
+        },
+        {
+          key: 'transfer',
+          label: '部门调动',
+          type: 'warning',
+          icon: 'swap',
+          showConfirmation: true,
+          confirmationText: '确定要调动选中员工的部门吗？',
+          onClick: (selectedRows) => {
+            window.$message?.warning(`${selectedRows.length} 名员工待调动`);
+          }
+        },
+        {
+          key: 'delete',
+          label: '批量删除',
+          type: 'error',
+          icon: 'delete',
+          showConfirmation: true,
+          confirmationText: '删除后无法恢复，确定要删除选中的员工吗？',
+          onClick: (selectedRows) => {
+            window.$message?.error(`已删除 ${selectedRows.length} 名员工`);
+          }
+        }
+      ],
       top: [
         {
           key: 'add',
@@ -221,27 +399,6 @@
           },
         },
       ],
-      batch: [
-        {
-          label: '批量删除',
-          key: 'batch-delete',
-          type: 'error',
-          showConfirmation: true,
-          confirmationText: '确定要删除选中的项目吗？',
-          onClick: (selectedRows) => {
-            window.$message?.error(`批量删除 ${selectedRows.length} 行`);
-          },
-        },
-        {
-          label: '批量导出',
-          key: 'batch-export',
-          type: 'info',
-          showConfirmation: false,
-          onClick: (selectedRows) => {
-            window.$message?.info(`批量导出 ${selectedRows.length} 行`);
-          },
-        },
-      ],
       batchPosition: 'top',
       contextMenu: [
         {
@@ -260,6 +417,19 @@
         },
       ],
     },
+    // 事件处理配置
+    onSearch: (filterValues) => {
+      console.log('执行搜索:', filterValues);
+      window.$message?.info(`搜索条件已应用`);
+    },
+    onAdvancedSearch: (filterValues) => {
+      console.log('执行高级搜索:', filterValues);
+      window.$message?.info(`高级搜索条件已应用`);
+    },
+    onViewChange: (viewKey, viewData) => {
+      console.log('切换视图:', viewKey, viewData);
+      window.$message?.success(`已切换到: ${viewData.label}`);
+    }
   });
 
   // 提供配置给子组件
