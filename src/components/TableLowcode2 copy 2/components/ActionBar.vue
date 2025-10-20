@@ -112,7 +112,7 @@ import {
 const config = inject('tableConfig')
 
 // 事件定义
-const emit = defineEmits(['create', 'import', 'export', 'refresh', 'print', 'fullscreen', 'config'])
+defineEmits(['create', 'import', 'export', 'refresh', 'print', 'fullscreen', 'config'])
 
 // 导入选项
 const importOptions = computed(() => [
@@ -152,12 +152,14 @@ const exportOptions = computed(() => [
 
 // 导入处理
 const handleImportSelect = (key: string) => {
-  emit('import', key)
+  console.log('导入类型:', key)
+  // 这里可以触发文件选择对话框
 }
 
 // 导出处理
 const handleExportSelect = (key: string) => {
-  emit('export', key)
+  console.log('导出类型:', key)
+  // 这里可以触发导出逻辑
 }
 </script>
 

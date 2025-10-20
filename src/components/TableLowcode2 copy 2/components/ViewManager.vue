@@ -45,7 +45,7 @@
               @keyup.esc="cancelEdit(view)"
               ref="editInput"
             />
-            <n-tag v-if="view.isDefault" size="small" type="primary">默认</n-tag>
+            
             
             <!-- 视图操作按钮 -->
             <div class="view-actions" @click.stop>
@@ -108,7 +108,7 @@
         :title="view.description"
       >
         {{ view.label }}
-        <n-tag v-if="view.isDefault" size="small" type="primary">默认</n-tag>
+        
         <n-badge 
           v-if="view.count !== null && view.count !== undefined" 
           :value="view.count" 
@@ -116,8 +116,6 @@
         />
       </div>
     </div>
-
-    <n-text depth="3" class="shortcut-hint">Ctrl+1~4 快速切换</n-text>
   </div>
 </template>
 

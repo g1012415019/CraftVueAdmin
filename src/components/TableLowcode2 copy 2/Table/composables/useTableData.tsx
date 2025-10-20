@@ -20,14 +20,11 @@ export function useTableData() {
 
   // 当前分页状态
   const currentPage = ref(1)
-  const currentPagesize = ref(() => {
-    const options = config.value?.pagination?.pageSizeOptions
-    if (typeof options === 'string') {
-      const firstOption = options.split(',')[0]
-      return firstOption ? parseInt(firstOption.trim()) : 10
-    }
-    return 10
-  })
+  const currentPagesize = ref(
+    config.value.pagination?.pageSizeOptions?.split(',')[0]
+      ? parseInt(config.value.pagination.pageSizeOptions.split(',')[0])
+      : 10
+  )
 
   // 过滤和排序状态
   const currentFilters = ref({})
@@ -74,9 +71,8 @@ export function useTableData() {
             for (const key in currentFilters.value) {
               const filterValue = currentFilters.value[key]
               if (filterValue !== undefined && filterValue !== null && filterValue !== '') {
-                const rowValue = String(row[key] || '').toLowerCase()
-                const searchValue = String(filterValue).toLowerCase()
-                if (!rowValue.includes(searchValue)) {
+                const rowValue = String(row[key]).toLowerCase()
+                if (!rowValue.includes(String(filterValue).toLowerCase())) {
                   return false
                 }
               }

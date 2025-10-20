@@ -76,7 +76,7 @@
 </style>
 
 <script setup lang="ts">
-import { inject, onMounted, ref, computed, h, provide } from 'vue';
+import { inject, onMounted, ref, computed, h } from 'vue';
 import { useTableData } from '@/components/TableLowcode2/Table/composables/useTableData.tsx';
 import { useTableEditing } from '@/components/TableLowcode2/Table/composables/useTableEditing.tsx';
 import { useTableContextMenu } from '@/components/TableLowcode2/Table/composables/useTableContextMenu.tsx';
@@ -217,8 +217,8 @@ const {
   openRecordDetail,
 } = useTableRowInteraction(tableData, startEdit, handleContextMenu, editingRowKey, null, null);
 
-// 将选中状态提供给子组件使用
-provide('selectedCell', selectedCell)
+// 将选中状态暴露给全局，供单元格使用
+window.tableSelectedCell = selectedCell;
 
 const {
   showDropdown: showColumnDropdown,
@@ -266,13 +266,10 @@ const handleTableClick = (e: MouseEvent) => {
   const row = cell.closest('tr')
   if (!row) return
   
-  // 移除之前的选中样式 - 只在当前表格容器内查找
-  const tableContainer = target.closest('.data-table-container')
-  if (tableContainer) {
-    tableContainer.querySelectorAll('.selected-cell').forEach(el => {
-      el.classList.remove('selected-cell')
-    })
-  }
+  // 移除之前的选中样式
+  document.querySelectorAll('.selected-cell').forEach(el => {
+    el.classList.remove('selected-cell')
+  })
   
   const rowIndex = Array.from(row.parentElement!.children).indexOf(row)
   const cellIndex = Array.from(row.children).indexOf(cell)

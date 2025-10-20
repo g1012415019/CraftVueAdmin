@@ -93,7 +93,6 @@ import FieldSettingsForm from './forms/FieldSettingsForm.vue';
 
 const props = defineProps<{
   show: boolean;
-  currentViewName?: string;
 }>();
 
 const config = inject('tableConfig') as Ref<any>;
@@ -101,7 +100,6 @@ const config = inject('tableConfig') as Ref<any>;
 const emit = defineEmits<{
   'update:show': [value: boolean];
   'config-change': [config: any];
-  'update-view-name': [name: string];
 }>();
 
 // 监听配置变化，实时更新表格
@@ -129,17 +127,8 @@ const showImportModal = ref(false);
 const importConfigText = ref('');
 
 const drawerTitle = computed(() => {
-  return props.currentViewName || config.value?.basic?.title || '表格'
+  return `${config.value?.basic?.title || '表格'} - 配置`
 });
-
-// 获取当前视图名称
-const getCurrentViewName = () => {
-  const tableStore = useTableConfigStore()
-  const views = tableStore.getViews('default')
-  const currentViewKey = getCurrentViewKey() // 需要从父组件传入或通过其他方式获取
-  const currentView = views.find(v => v.key === currentViewKey)
-  return currentView?.label || config.value?.basic?.title || '表格'
-}
 
 // 编辑标题
 const editingTitle = ref(false);
@@ -147,12 +136,13 @@ const tempTitle = ref('');
 
 const startEditTitle = () => {
   editingTitle.value = true;
-  tempTitle.value = props.currentViewName || '表格';
+  tempTitle.value = config.value?.basic?.title || '表格';
 };
 
 const finishEditTitle = () => {
-  // 这里需要通过事件通知父组件更新视图名称
-  emit('update-view-name', tempTitle.value);
+  if (config.value?.basic) {
+    config.value.basic.title = tempTitle.value;
+  }
   editingTitle.value = false;
 };
 

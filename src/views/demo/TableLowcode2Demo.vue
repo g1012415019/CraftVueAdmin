@@ -1,437 +1,109 @@
 <template>
-  <div>
-    <TableLowcode2Component @open-config="showConfigPanel = true" />
+  <div class="table-lowcode2-demo">
+    <TableLowcode2Component 
+      ref="tableRef"
+      @open-config="showConfigPanel = true" 
+      @view-name-change="currentViewName = $event"
+    />
+    
     <ConfigPanel 
-      v-model:show="showConfigPanel"
+      :show="showConfigPanel" 
+      :current-view-name="currentViewName"
+      @update:show="showConfigPanel = $event"
+      @config-change="handleConfigChange"
+      @update-view-name="handleUpdateViewName"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, provide } from 'vue';
-  import TableLowcode2Component from '@/components/TableLowcode2/TableLowcode2.vue';
-  import ConfigPanel from '@/components/TableLowcode2/Config/ConfigPanel.vue';
+import { ref, provide, computed } from 'vue';
+import TableLowcode2Component from '@/components/TableLowcode2/TableLowcode2.vue';
+import ConfigPanel from '@/components/TableLowcode2/Config/ConfigPanel.vue';
+import { mapToTableConfig } from '@/components/TableLowcode2/utils/configMapper';
+import { useTableConfigStore } from '@/store/modules/tableConfig';
 
-  const showConfigPanel = ref(false);
+const showConfigPanel = ref(false);
+const tableStore = useTableConfigStore();
+const currentViewName = ref('默认视图'); // 直接使用响应式变量
+const tableRef = ref(); // 添加 ref 引用
 
-  // 表格配置
-  const tableConfig = ref({
-    basic: {
-      title: '我的表格',
-      description: '这是一个功能强大的表格',
-      showRowNumber: true,
-      rowNumberStart: 1,
-      rowNumberWidth: 60,
-      rowNumberAlign: 'center',
-      loading: false,
-      loadingAnimation: 'default',
-      loadingText: '正在加载...',
-      height: null,
-      maxHeight: 600,
-      scrollX: null,
-      theme: 'light',
-      striped: true,
-      compact: false,
-      bordered: true,
-      rowHeight: 42,
-      fontSize: 14,
-      headerFixed: true,
-    },
-    // 视图配置
-    views: {
-      presetViews: [
-        { 
-          key: 'all', 
-          label: '全部员工', 
-          count: 1250,
-          description: '显示所有员工记录',
-          icon: '👥',
-          filter: {},
-          badgeType: 'default',
-          config: {
-            basic: {
-              title: '全部员工'
-            }
-          }
-        },
-        { 
-          key: 'active', 
-          label: '在职员工', 
-          count: 1180,
-          description: '显示在职员工',
-          icon: '✅',
-          filter: { status: 'active' },
-          badgeType: 'success',
-          config: {
-            basic: {
-              title: '在职员工'
-            }
-          }
-        },
-        { 
-          key: 'new', 
-          label: '新入职', 
-          count: 23,
-          description: '最近30天入职的员工',
-          icon: '🆕',
-          filter: { joinDate: 'recent30days' },
-          badgeType: 'info',
-          alert: false,
-          config: {
-            basic: {
-              title: '新入职'
-            }
-          }
-        },
-        { 
-          key: 'pending', 
-          label: '待审核', 
-          count: 15,
-          description: '待审核的员工信息',
-          icon: '⏳',
-          filter: { status: 'pending' },
-          badgeType: 'warning',
-          alert: true,
-          config: {
-            basic: {
-              title: '待审核'
-            }
-          }
-        }
-      ]
-    },
-    // 筛选配置
-    filters: {
-      fields: [
-        { 
-          key: 'name', 
-          type: 'text', 
-          position: 'filterBar', 
-          label: '员工姓名', 
-          placeholder: '输入员工姓名搜索' 
-        },
-        { 
-          key: 'status', 
-          type: 'select', 
-          position: 'filterBar', 
-          label: '状态', 
-          options: [
-            { label: '在职', value: 'active' },
-            { label: '离职', value: 'inactive' },
-            { label: '待审核', value: 'pending' }
-          ]
-        },
-        { 
-          key: 'department', 
-          type: 'select', 
-          position: 'filterBar', 
-          label: '部门', 
-          options: [
-            { label: '技术部', value: 'tech' },
-            { label: '销售部', value: 'sales' },
-            { label: '市场部', value: 'marketing' }
-          ]
-        },
-        { 
-          key: 'joinDate', 
-          type: 'dateRange', 
-          position: 'filterBar', 
-          label: '入职时间' 
-        },
-        { 
-          key: 'age', 
-          type: 'numberRange', 
-          position: 'advanced', 
-          label: '年龄范围',
-          min: 18,
-          max: 65
-        },
-        { 
-          key: 'salary', 
-          type: 'slider', 
-          position: 'advanced', 
-          label: '薪资范围',
-          min: 3000,
-          max: 50000
-        },
-        { 
-          key: 'skills', 
-          type: 'multiSelect', 
-          position: 'advanced', 
-          label: '技能标签',
-          options: [
-            { label: 'Vue.js', value: 'vue' },
-            { label: 'React', value: 'react' },
-            { label: 'Node.js', value: 'nodejs' },
-            { label: 'Python', value: 'python' }
-          ]
-        }
-      ]
-    },
-    selection: {
-      enabled: true,
-      mode: 'multiple',
-      columnPosition: 'left',
-      keepOnPageChange: false,
-      defaultSelectedRowKeys: [],
-    },
-    sortFilter: {
-      columnSort: true,
-      showGlobalSearch: true,
-      showFilterTags: true,
-      defaultSort: { key: null, order: 'ascend' },
-      sortMode: 'backend',
-      filterMode: 'backend',
-      debounceDelay: 300,
-      globalSearchColumns: [],
-    },
-    pagination: {
-      position: 'bottom',
-      pageSizeOptions: '10,20,50,100',
-      simple: false,
-      showTotal: true,
-      showQuickJumper: true,
-      serverSidePagination: true,
-    },
-    data: {
-      refreshInterval: 0,
-    },
-    interaction: {
-      rowClick: false,
-      rowDblClick: false,
-      dragSort: true,
-      contextMenu: true,
-    },
-    editing: {
-      inlineEditingEnabled: true,
-      mode: 'row',
-      trigger: 'dblclick',
-      buttonsPosition: 'inline',
-    },
-    columns: [
-      {
-        key: 'name',
-        label: '姓名',
-        visible: true,
-        width: 150,
-        fixed: null,
-        align: 'left',
-        sortable: true,
-        defaultSortOrder: null,
-        customSorter: null,
-        filterable: true,
-        filterType: 'text',
-        filterOptions: [],
-        defaultFilterValue: null,
-        editable: true,
-        dataType: 'text',
-      },
-      {
-        key: 'age',
-        label: '年龄',
-        visible: true,
-        width: 80,
-        fixed: null,
-        align: 'center',
-        sortable: true,
-        defaultSortOrder: null,
-        customSorter: null,
-        filterable: true,
-        filterType: 'numberRange',
-        filterOptions: [],
-        defaultFilterValue: null,
-        editable: true,
-        dataType: 'number',
-      },
-      {
-        key: 'address',
-        label: '地址',
-        visible: true,
-        width: 300,
-        fixed: null,
-        align: 'left',
-        sortable: false,
-        defaultSortOrder: null,
-        customSorter: null,
-        filterable: true,
-        filterType: 'text',
-        filterOptions: [],
-        defaultFilterValue: null,
-        editable: true,
-        dataType: 'text',
-      },
-      {
-        key: 'email',
-        label: '邮箱',
-        visible: false,
-        width: 250,
-        fixed: null,
-        align: 'left',
-        sortable: false,
-        defaultSortOrder: null,
-        customSorter: null,
-        filterable: true,
-        filterType: 'text',
-        filterOptions: [],
-        defaultFilterValue: null,
-        editable: true,
-        dataType: 'text',
-      },
-      {
-        key: 'status',
-        label: '状态',
-        visible: true,
-        width: 100,
-        fixed: null,
-        align: 'center',
-        sortable: true,
-        defaultSortOrder: null,
-        customSorter: null,
-        filterable: true,
-        filterType: 'enum',
-        filterOptions: 'active,inactive',
-        defaultFilterValue: null,
-        editable: true,
-        dataType: 'select',
-        selectOptions: [
-          { label: '活跃', value: 'active' },
-          { label: '不活跃', value: 'inactive' },
-        ],
-      },
-    ],
-    actions: {
-      create: {
-        onClick: () => {
-          window.$message?.success('新增员工');
-        },
-      },
-      showInlineColumn: false,
-      // 批量操作配置
-      batch: [
-        {
-          key: 'activate',
-          label: '批量激活',
-          type: 'success',
-          icon: 'check',
-          showConfirmation: true,
-          confirmationText: '确定要激活选中的员工吗？',
-          onClick: (selectedRows) => {
-            window.$message?.success(`已激活 ${selectedRows.length} 名员工`);
-          }
-        },
-        {
-          key: 'export',
-          label: '导出数据',
-          type: 'info',
-          icon: 'download',
-          onClick: (selectedRows) => {
-            window.$message?.info(`正在导出 ${selectedRows.length} 条记录`);
-          }
-        },
-        {
-          key: 'transfer',
-          label: '部门调动',
-          type: 'warning',
-          icon: 'swap',
-          showConfirmation: true,
-          confirmationText: '确定要调动选中员工的部门吗？',
-          onClick: (selectedRows) => {
-            window.$message?.warning(`${selectedRows.length} 名员工待调动`);
-          }
-        },
-        {
-          key: 'delete',
-          label: '批量删除',
-          type: 'error',
-          icon: 'delete',
-          showConfirmation: true,
-          confirmationText: '删除后无法恢复，确定要删除选中的员工吗？',
-          onClick: (selectedRows) => {
-            window.$message?.error(`已删除 ${selectedRows.length} 名员工`);
-          }
-        }
-      ],
-      top: [
-        {
-          key: 'add',
-          label: '新增',
-          type: 'primary',
-          icon: 'add',
-          showConfirmation: false,
-          confirmationText: '',
-          onClick: () => {
-            window.$message?.success('新增操作');
-          },
-        },
-        {
-          key: 'delete',
-          label: '批量删除',
-          type: 'error',
-          icon: 'delete',
-          showConfirmation: true,
-          confirmationText: '确定要删除选中的项目吗？',
-          onClick: () => {
-            window.$message?.error('批量删除操作');
-          },
-        },
-      ],
-      inline: [
-        {
-          key: 'edit',
-          label: '编辑',
-          type: 'default',
-          icon: 'edit',
-          showConfirmation: false,
-          confirmationText: '',
-          onClick: (row) => {
-            window.$message?.info(`编辑: ${row.name}`);
-          },
-        },
-        {
-          key: 'delete',
-          label: '删除',
-          type: 'error',
-          icon: 'delete',
-          showConfirmation: true,
-          confirmationText: '确定要删除该行吗？',
-          onClick: (row) => {
-            window.$message?.error(`删除: ${row.name}`);
-          },
-        },
-      ],
-      batchPosition: 'top',
-      contextMenu: [
-        {
-          label: '编辑',
-          key: 'edit',
-          onClick: (row) => {
-            window.$message?.info(`右键编辑: ${row.name}`);
-          },
-        },
-        {
-          label: '删除',
-          key: 'delete',
-          onClick: (row) => {
-            window.$message?.error(`右键删除: ${row.name}`);
-          },
-        },
-      ],
-    },
-    // 事件处理配置
-    onSearch: (filterValues) => {
-      console.log('执行搜索:', filterValues);
-      window.$message?.info(`搜索条件已应用`);
-    },
-    onAdvancedSearch: (filterValues) => {
-      console.log('执行高级搜索:', filterValues);
-      window.$message?.info(`高级搜索条件已应用`);
-    },
-    onViewChange: (viewKey, viewData) => {
-      console.log('切换视图:', viewKey, viewData);
-      window.$message?.success(`已切换到: ${viewData.label}`);
-    }
-  });
+// 简化配置 - 只需要核心参数
+const simpleConfig = {
+  title: '员工管理表格',
+  fields: [
+    { key: 'id', label: 'ID', type: 'number', width: 80, sortable: true },
+    { key: 'name', label: '姓名', type: 'text', width: 120, sortable: true },
+    { key: 'age', label: '年龄', type: 'number', width: 80, sortable: true },
+    { key: 'email', label: '邮箱', type: 'text', width: 200, sortable: false },
+    { key: 'phone', label: '电话', type: 'text', width: 140, sortable: false },
+    { key: 'department', label: '部门', type: 'text', width: 120, sortable: true },
+    { key: 'status', label: '状态', type: 'select', width: 100, sortable: true },
+    { key: 'avatar', label: '头像', type: 'image', width: 80, sortable: false },
+    { key: 'address', label: '地址', type: 'text', width: 200, sortable: false },
+    { key: 'createTime', label: '创建时间', type: 'date', width: 160, sortable: true },
+  ],
+  features: {
+    pagination: true,
+    search: true,
+    export: true,
+    selection: true,
+    editing: true,
+  },
+  theme: 'light'
+};
 
-  // 提供配置给子组件
-  provide('tableConfig', tableConfig);
+// 自动映射为完整的表格配置
+const tableConfig = ref(mapToTableConfig(simpleConfig));
+
+// 添加示例数据
+tableConfig.value.data = [
+  {
+    id: 1,
+    name: '张三',
+    age: 28,
+    email: 'zhangsan@example.com',
+    phone: '13800138001',
+    department: '技术部',
+    status: 'active',
+    avatar: 'https://via.placeholder.com/40',
+    address: '北京市朝阳区',
+    createTime: '2023-01-15'
+  },
+  {
+    id: 2,
+    name: '李四',
+    age: 32,
+    email: 'lisi@example.com',
+    phone: '13800138002',
+    department: '销售部',
+    status: 'active',
+    avatar: 'https://via.placeholder.com/40',
+    address: '上海市浦东新区',
+    createTime: '2023-02-20'
+  }
+];
+
+// 处理配置变化 - 实时生效
+const handleConfigChange = (newConfig: any) => {
+  // 配置已经通过响应式系统自动更新
+  // 这里可以添加额外的处理逻辑，比如保存到本地存储
+  console.log('配置已更新:', newConfig);
+};
+
+// 处理视图名称更新
+const handleUpdateViewName = (newName: string) => {
+  currentViewName.value = newName;
+  // 调用子组件的方法更新视图名称
+  tableRef.value?.updateCurrentViewName?.(newName);
+};
+
+// 提供配置给子组件
+provide('tableConfig', tableConfig);
 </script>
+
+<style scoped>
+.table-lowcode2-demo {
+  padding: 20px;
+}
+</style>

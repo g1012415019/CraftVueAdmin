@@ -73,26 +73,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, provide, watch, type Ref } from 'vue'
+import { ref, inject, provide, type Ref } from 'vue'
+import ViewManager from './components/ViewManager.vue'
 import ActionBar from './components/ActionBar.vue'
 import PaginationBar from './components/PaginationBar.vue'
-import ViewManager from './components/ViewManager/index.vue'
 import FilterSection from './components/FilterSection.vue'
 import TableSection from './components/TableSection.vue'
 import { useViewManager } from './composables/useViewManager'
 import { useTableData } from './composables/useTableData'
 import { useTableActions } from './composables/useTableActions'
-import { useTableConfigStore } from '@/store/modules/tableConfig'
 
-const emit = defineEmits(['openConfig', 'viewNameChange'])
+const emit = defineEmits(['openConfig'])
 const config = inject('tableConfig') as Ref<any>
-const tableStore = useTableConfigStore()
 
 // 使用组合式函数分离职责
 const {
   viewTabs,
   currentView,
-  currentViewName,
   handleViewChange,
   handleViewMenuSelect,
   handleAddView,
@@ -134,26 +131,6 @@ const {
   handleFullscreen,
   updateCheckedRowKeys
 } = useTableActions(config)
-
-// 监听视图名称变化并传递给父组件
-watch(currentViewName, (newName) => {
-  emit('viewNameChange', newName)
-}, { immediate: true })
-
-// 暴露方法给父组件调用
-const updateCurrentViewName = (newName: string) => {
-  // 更新当前视图的名称到 store
-  const views = tableStore.getViews('default')
-  const currentViewData = views.find(v => v.key === currentView.value)
-  if (currentViewData) {
-    tableStore.updateView('default', currentView.value, { label: newName })
-  }
-}
-
-// 暴露给父组件
-defineExpose({
-  updateCurrentViewName
-})
 
 // 导入导出处理
 const handleImport = (type: string) => {
