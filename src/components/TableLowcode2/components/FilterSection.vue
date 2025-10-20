@@ -60,12 +60,6 @@
           </n-icon>
         </template>
         高级筛选
-        <n-badge 
-          v-if="advancedFilterCount > 0" 
-          :value="advancedFilterCount" 
-          :max="99"
-          style="margin-left: 4px;"
-        />
       </n-button>
       
       <n-button size="small" type="primary" @click="$emit('search')">

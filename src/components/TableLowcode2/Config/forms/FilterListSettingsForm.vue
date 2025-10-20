@@ -231,7 +231,7 @@
               </div>
               
               <!-- 编辑面板 -->
-              <div v-if="editingField === field.key" class="field-edit-panel">
+              <div v-if="editingField === field.key" class="field-edit-panel" @click.stop>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 8px;">
                   <div>
                     <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
