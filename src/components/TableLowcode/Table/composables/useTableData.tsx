@@ -39,8 +39,46 @@ export function useTableData() {
   // 数据加载状态
   const loading = ref(false)
 
-  // 表格数据
-  const tableData = ref([])
+  // 表格数据 - 根据视图过滤
+  const tableData = computed(() => {
+    let data = config?.value?.data || mockData.value
+    
+    console.log('原始数据:', data.length, '条')
+    console.log('当前视图过滤条件:', config?.value?.currentViewFilter)
+    
+    // 应用视图过滤
+    if (config?.value?.currentViewFilter && Object.keys(config.value.currentViewFilter).length > 0) {
+      const filter = config.value.currentViewFilter
+      
+      data = data.filter(row => {
+        return Object.entries(filter).every(([key, value]) => {
+          if (!value) return true
+          
+          const rowValue = row[key]
+          console.log(`过滤条件: ${key} = ${value}, 行数据: ${rowValue}`)
+          
+          if (typeof value === 'string') {
+            const match = String(rowValue) === value
+            console.log(`字符串匹配结果: ${match}`)
+            return match
+          } else if (typeof value === 'object' && value.operator) {
+            switch (value.operator) {
+              case 'eq': return rowValue === value.value
+              case 'ne': return rowValue !== value.value
+              case 'gt': return Number(rowValue) > Number(value.value)
+              case 'lt': return Number(rowValue) < Number(value.value)
+              case 'contains': return String(rowValue).toLowerCase().includes(String(value.value).toLowerCase())
+              default: return true
+            }
+          }
+          return String(rowValue) === String(value)
+        })
+      })
+    }
+    
+    console.log('过滤后数据:', data.length, '条')
+    return data
+  })
 
   // 总数据量（用于后端分页）
   const totalCount = ref(0)

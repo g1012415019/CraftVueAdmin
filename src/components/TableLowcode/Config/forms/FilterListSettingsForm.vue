@@ -386,9 +386,31 @@ const selectedFieldsConfig = ref<Array<{
 
 // 监听 config 变化，初始化配置
 watch(() => config?.value, (newConfig) => {
+  console.log('FilterListSettingsForm config 变化:', newConfig)
+  
   if (newConfig?.filters) {
-    selectedFieldsConfig.value = newConfig.filters.selectedFieldsConfig || []
-    selectedFields.value = selectedFieldsConfig.value.map(f => f.key)
+    // 直接使用当前视图的筛选配置
+    selectedFieldsConfig.value = newConfig.filters.map(filter => ({
+      key: filter.key,
+      label: filter.label,
+      filterType: filter.filterType || 'input',
+      show: filter.show !== false,
+      position: 'top',
+      sortOrder: 1,
+      defaultExpanded: true,
+      allowMultiple: false,
+      advancedFilter: false
+    }))
+    
+    selectedFields.value = selectedFieldsConfig.value
+      .filter(f => f.show)
+      .map(f => f.key)
+      
+    console.log('筛选字段配置:', selectedFieldsConfig.value)
+    console.log('选中字段:', selectedFields.value)
+  } else {
+    selectedFieldsConfig.value = []
+    selectedFields.value = []
   }
 }, { immediate: true })
 

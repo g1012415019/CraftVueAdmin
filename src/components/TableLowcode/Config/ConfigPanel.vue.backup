@@ -148,6 +148,7 @@ const props = defineProps<{
   viewKey?: string;
 }>();
 
+// 获取主配置
 const baseConfig = inject('tableConfig') as Ref<any>;
 
 // 当前视图的配置 - 根据视图ID获取对应配置
@@ -158,6 +159,8 @@ const config = computed({
     const currentViewKey = baseConfig.value.currentViewKey || 'all';
     const currentView = baseConfig.value.views?.find(v => v.key === currentViewKey);
     
+    console.log('获取视图配置:', currentViewKey, currentView?.config);
+    
     // 返回当前视图的配置
     return currentView?.config || {};
   },
@@ -167,15 +170,13 @@ const config = computed({
     const currentViewKey = baseConfig.value.currentViewKey || 'all';
     const viewIndex = baseConfig.value.views?.findIndex(v => v.key === currentViewKey);
     
+    console.log('保存视图配置:', currentViewKey, newConfig);
+    
     if (viewIndex >= 0) {
-      // 直接修改视图配置，避免触发响应式循环
-      const views = baseConfig.value.views;
-      views[viewIndex] = {
-        ...views[viewIndex],
-        config: { ...newConfig }
-      };
+      // 保存到对应视图的配置
+      baseConfig.value.views[viewIndex].config = { ...newConfig };
       
-      // 更新主配置
+      // 同时更新主配置（用于实时显示）
       Object.keys(newConfig).forEach(key => {
         if (key !== 'data' && key !== 'views') {
           baseConfig.value[key] = newConfig[key];
@@ -184,8 +185,6 @@ const config = computed({
     }
   }
 });
-
-provide('tableConfig', config);
 
 // 确保配置有完整的默认值
 if (config?.value) {

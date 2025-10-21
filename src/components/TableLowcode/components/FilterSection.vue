@@ -201,7 +201,15 @@ const emit = defineEmits<{
 const showAdvanced = ref(false)
 
 const shouldShowFilters = computed(() => {
-  return props.filterBarFields.length > 0 || (props.advancedFilterFields && props.advancedFilterFields.length > 0)
+  const hasBasicFilters = props.filterBarFields.length > 0
+  const hasAdvancedFilters = props.advancedFilterFields && props.advancedFilterFields.length > 0
+  
+  console.log('FilterSection 筛选显示判断:')
+  console.log('- 基础筛选字段:', props.filterBarFields)
+  console.log('- 高级筛选字段:', props.advancedFilterFields)
+  console.log('- 是否显示:', hasBasicFilters || hasAdvancedFilters)
+  
+  return hasBasicFilters || hasAdvancedFilters
 })
 
 const handleFilterUpdate = (key: string, value: any) => {

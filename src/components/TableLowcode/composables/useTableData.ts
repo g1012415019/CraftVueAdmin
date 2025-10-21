@@ -7,7 +7,6 @@ export function useTableData(config: Ref<any>) {
   const currentPageSize = ref(10)
   const filterValues = ref({})
   const showAdvancedFilter = ref(false)
-  const filterVisible = ref(true)
 
   const statusOptions = ref([
     { label: '启用', value: 'active' },
@@ -18,8 +17,48 @@ export function useTableData(config: Ref<any>) {
     return config.value?.filters?.selectedFieldsConfig || []
   })
 
-  const filterBarFields = computed(() => filterFields.value)
-  const advancedFilterFields = computed(() => filterFields.value.filter(field => field.advancedFilter))
+  const filterBarFields = computed(() => {
+    const currentViewKey = config?.value?.currentViewKey || 'all'
+    const currentView = config?.value?.views?.find(v => v.key === currentViewKey)
+    
+    console.log('重新计算筛选字段:', currentViewKey)
+    
+    // 优先使用主配置的 filters
+    if (config?.value?.filters && Array.isArray(config.value.filters)) {
+      const fields = config.value.filters.filter(f => f.show !== false)
+      console.log('使用主配置筛选字段:', fields)
+      return fields
+    }
+    
+    // 其次使用视图配置的 filters
+    if (currentView?.config?.filters) {
+      const fields = currentView.config.filters.filter(f => f.show !== false)
+      console.log('使用视图配置筛选字段:', fields)
+      return fields
+    }
+    
+    console.log('使用默认筛选字段:', filterFields.value)
+    return filterFields.value
+  })
+  
+  // 筛选可见性 - 有筛选字段时显示
+  const filterVisible = computed(() => {
+    const hasFields = filterBarFields.value.length > 0
+    console.log('筛选可见性:', hasFields, '字段数量:', filterBarFields.value.length)
+    return hasFields
+  })
+  const advancedFilterFields = computed(() => {
+    const currentViewKey = config?.value?.currentViewKey || 'all'
+    const currentView = config?.value?.views?.find(v => v.key === currentViewKey)
+    
+    if (currentView?.config?.filters) {
+      const advancedFields = currentView.config.filters.filter(f => f.advancedFilter && f.show !== false)
+      console.log('高级筛选字段:', advancedFields)
+      return advancedFields
+    }
+    
+    return filterFields.value.filter(field => field.advancedFilter)
+  })
   const pageCount = computed(() => Math.ceil(totalCount.value / currentPageSize.value))
 
   const advancedFilterCount = computed(() => {

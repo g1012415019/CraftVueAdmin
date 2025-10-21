@@ -5,7 +5,7 @@ export function useViewManager(config: Ref<any>, emit: any) {
   const tableStore = useTableConfigStore()
   const tableId = 'default'
   
-  const currentView = ref('default')
+  const currentView = ref('all') // 默认选中第一个视图
   
   const currentViewName = computed(() => {
     const currentViewData = viewTabs.value.find(v => v.key === currentView.value)
@@ -13,13 +13,25 @@ export function useViewManager(config: Ref<any>, emit: any) {
   })
 
   const viewTabs = computed(() => {
+    // 优先使用 config 中的 views 配置
+    if (config?.value?.views && Array.isArray(config.value.views)) {
+      return config.value.views.map(view => ({
+        ...view,
+        count: getFilteredDataCount(view.filter || {}),
+        description: view.description || `${view.label} - 自定义视图`,
+        isDefault: view.key === 'all',
+        isCustom: view.key !== 'all'
+      }))
+    }
+    
+    // 如果没有配置，使用 store 中的视图
     const storeViews = tableStore.getViews(tableId)
     
     // 确保始终有默认视图
     const defaultView = {
       key: 'default',
       label: '默认视图',
-      count: config.value?.data?.length || 0,
+      count: config?.value?.data?.length || 0,
       description: '默认数据视图',
       isDefault: true,
       isCustom: false
@@ -38,29 +50,59 @@ export function useViewManager(config: Ref<any>, emit: any) {
     
     return storeViews
   })
+  
+  // 计算过滤后的数据数量
+  const getFilteredDataCount = (filter: any) => {
+    if (!config?.value?.data || Object.keys(filter).length === 0) {
+      return config?.value?.data?.length || 0
+    }
+    
+    return config.value.data.filter(row => {
+      return Object.entries(filter).every(([key, value]) => {
+        if (!value) return true
+        const rowValue = row[key]
+        return String(rowValue).toLowerCase().includes(String(value).toLowerCase())
+      })
+    }).length
+  }
 
   const handleViewChange = (viewKey: string) => {
     const viewData = viewTabs.value.find(v => v.key === viewKey)
     if (viewData) {
       currentView.value = viewKey
       
+      // 应用视图的配置
+      if (config?.value) {
+        // 设置当前视图信息
+        config.value.currentViewKey = viewKey
+        config.value.currentViewFilter = viewData.filter || {}
+        
+        // 应用视图的配置，但保留原始数据和基础列配置
+        if (viewData.config) {
+          // 保存原始配置
+          const originalData = config.value.data
+          const originalColumns = config.value.columns
+          
+          // 合并视图配置
+          Object.keys(viewData.config).forEach(key => {
+            if (key === 'columns') {
+              // 对于列配置，使用视图的列配置，但如果视图没有指定则使用原始配置
+              config.value[key] = viewData.config[key] || originalColumns
+            } else if (viewData.config[key]) {
+              config.value[key] = { ...config.value[key], ...viewData.config[key] }
+            }
+          })
+          
+          // 确保数据不被覆盖
+          config.value.data = originalData
+        }
+        
+        // 触发数据重新计算
+        config.value.dataUpdateTrigger = Date.now()
+      }
+      
       // 通知父组件视图切换
       emit('viewChange', viewKey)
-      
-      // 保存当前视图的配置
-      if (config?.value && currentView.value !== viewKey) {
-        tableStore.saveViewConfig(tableId, currentView.value, config.value)
-      }
-      
-      // 加载新视图的独立配置
-      const viewConfig = tableStore.getViewConfig(tableId, viewKey)
-      if (viewConfig && config?.value) {
-        Object.assign(config.value, viewConfig)
-      } else if (config?.value && viewData.config) {
-        Object.assign(config.value, viewData.config)
-      }
-      
-      config?.value?.onViewChange?.(viewKey, viewData)
     }
   }
 
@@ -255,6 +297,12 @@ export function useViewManager(config: Ref<any>, emit: any) {
     
     URL.revokeObjectURL(url)
     window.$message?.success('视图配置已导出')
+  }
+
+  // 初始化时应用默认视图
+  if (config?.value?.views && config.value.views.length > 0) {
+    const defaultView = config.value.views[0]
+    handleViewChange(defaultView.key)
   }
 
   return {

@@ -22,7 +22,13 @@ export function useDataColumns(
     console.log('dataColumns computed, config.columns:', config.value.columns?.length)
     const cols = []
 
-    config.value.columns.forEach((col) => {
+    const columns = config?.value?.columns || []
+    if (!Array.isArray(columns)) {
+      console.warn('columns is not an array:', columns)
+      return []
+    }
+
+    columns.forEach((col) => {
       if (!col.visible) return
 
       console.log('Processing column:', col.key, col.label)
