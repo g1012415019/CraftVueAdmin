@@ -1,0 +1,142 @@
+<script lang="ts" setup>
+import { ref, computed, inject, watch, provide, type Ref } from 'vue';
+import BasicSettingsForm from './forms/BasicSettingsForm.vue';
+import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
+import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
+import SortSettingsForm from './forms/SortSettingsForm.vue';
+import FieldSettingsForm from './forms/FieldSettingsForm.vue';
+import DataFilterForm from './forms/DataFilterForm.vue';
+import { EditOutlined as EditIcon } from '@vicons/antd'
+
+const props = defineProps<{
+  show: boolean;
+  currentViewName?: string;
+  tableId?: string;
+  viewKey?: string;
+}>();
+
+const emit = defineEmits<{
+  'update:show': [value: boolean];
+  'config-change': [config: any];
+  'update-view-name': [name: string];
+}>();
+
+// 简单直接的配置
+const config = inject('tableConfig') as Ref<any>;
+
+// 提供配置给子组件
+provide('tableConfig', config);
+
+const show = computed({
+  get: () => props.show,
+  set: (value) => emit('update:show', value),
+});
+
+const activeMenu = ref('basic');
+const showConfigModal = ref(false);
+const showImportModal = ref(false);
+const importConfigText = ref('');
+
+const drawerTitle = computed(() => {
+  return props.currentViewName || config?.value?.basic?.title || '表格'
+});
+
+const editingTitle = ref(false);
+const tempTitle = ref('');
+const editingViewKey = ref(false);
+const tempViewKey = ref('');
+
+const startEditTitle = () => {
+  editingTitle.value = true;
+  tempTitle.value = props.currentViewName || '表格';
+};
+
+const finishEditTitle = () => {
+  emit('update-view-name', tempTitle.value);
+  editingTitle.value = false;
+};
+
+const startEditViewKey = () => {
+  editingViewKey.value = true;
+  tempViewKey.value = props.viewKey || 'default';
+};
+
+const finishEditViewKey = () => {
+  editingViewKey.value = false;
+};
+
+const menuGroups = [
+  {
+    key: 'basic-settings',
+    title: '基础设置',
+    items: [
+      { key: 'basic', label: '表格视图', component: BasicSettingsForm },
+      { key: 'pagination', label: '分页', component: PaginationSettingsForm },
+    ]
+  },
+  {
+    key: 'structure',
+    title: '结构分组',
+    items: [
+      { key: 'columns', label: '列配置', component: FieldSettingsForm },
+    ]
+  },
+  {
+    key: 'data-processing',
+    title: '数据处理',
+    items: [
+      { key: 'sort-filter', label: '排序', component: SortSettingsForm },
+      { key: 'data-filter', label: '数据过滤', component: DataFilterForm },
+      { key: 'data', label: '筛选设置', component: FilterListSettingsForm },
+    ]
+  }
+];
+
+const allMenuItems = menuGroups.flatMap(group => group.items);
+
+const currentComponent = computed(() => {
+  const menu = allMenuItems.find((m) => m.key === activeMenu.value);
+  return menu?.component;
+});
+
+const exportConfig = () => {
+  const configData = JSON.stringify(config?.value, null, 2);
+  const blob = new Blob([configData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `table-config-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  window.$message?.success('配置已导出');
+};
+
+const handleImportConfig = () => {
+  try {
+    const newConfig = JSON.parse(importConfigText.value);
+    if (config?.value) {
+      Object.assign(config.value, newConfig);
+    }
+    showImportModal.value = false;
+    importConfigText.value = '';
+    window.$message?.success('配置导入成功');
+  } catch (error) {
+    window.$message?.error('JSON 格式错误，请检查配置文件');
+  }
+};
+
+const fullConfigDescription = computed(() => {
+  return '配置描述功能暂时简化';
+});
+
+const copyConfigDescription = async () => {
+  try {
+    await navigator.clipboard.writeText(fullConfigDescription.value);
+    window.$message?.success('配置描述已复制到剪贴板');
+  } catch (error) {
+    window.$message?.error('复制失败，请手动复制');
+  }
+};
+</script>

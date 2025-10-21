@@ -1,55 +1,47 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed, nextTick, type Ref } from 'vue'
 import { useTableConfigStore } from '@/store/modules/tableConfig'
 
 export function useViewManager(config: Ref<any>, emit: any) {
   const tableStore = useTableConfigStore()
   const tableId = 'default'
   
-  const currentView = ref('all') // 默认选中第一个视图
+  const currentView = ref('all')
+  const viewTabs = ref([])
+  const currentViewName = ref('默认视图')
   
-  const currentViewName = computed(() => {
-    const currentViewData = viewTabs.value.find(v => v.key === currentView.value)
-    return currentViewData?.label || '默认视图'
-  })
-
-  const viewTabs = computed(() => {
-    // 优先使用 config 中的 views 配置
+  // 更新视图列表
+  const updateViewTabs = () => {
     if (config?.value?.views && Array.isArray(config.value.views)) {
-      return config.value.views.map(view => ({
+      viewTabs.value = config.value.views.map(view => ({
         ...view,
-        count: getFilteredDataCount(view.filter || {}),
+        count: 0, // 暂时设为0，避免递归
         description: view.description || `${view.label} - 自定义视图`,
         isDefault: view.key === 'all',
         isCustom: view.key !== 'all'
       }))
+    } else {
+      const storeViews = tableStore.getViews(tableId)
+      const defaultView = {
+        key: 'default',
+        label: '默认视图',
+        count: 0,
+        description: '默认数据视图',
+        isDefault: true,
+        isCustom: false
+      }
+      
+      if (storeViews.length === 0) {
+        viewTabs.value = [defaultView]
+      } else {
+        const hasDefault = storeViews.some(v => v.key === 'default')
+        viewTabs.value = hasDefault ? storeViews : [defaultView, ...storeViews]
+      }
     }
     
-    // 如果没有配置，使用 store 中的视图
-    const storeViews = tableStore.getViews(tableId)
-    
-    // 确保始终有默认视图
-    const defaultView = {
-      key: 'default',
-      label: '默认视图',
-      count: config?.value?.data?.length || 0,
-      description: '默认数据视图',
-      isDefault: true,
-      isCustom: false
-    }
-    
-    // 如果没有视图，返回默认视图
-    if (storeViews.length === 0) {
-      return [defaultView]
-    }
-    
-    // 检查是否已有默认视图
-    const hasDefault = storeViews.some(v => v.key === 'default')
-    if (!hasDefault) {
-      return [defaultView, ...storeViews]
-    }
-    
-    return storeViews
-  })
+    // 更新当前视图名称
+    const currentViewData = viewTabs.value.find(v => v.key === currentView.value)
+    currentViewName.value = currentViewData?.label || '默认视图'
+  }
   
   // 计算过滤后的数据数量
   const getFilteredDataCount = (filter: any) => {
@@ -67,43 +59,8 @@ export function useViewManager(config: Ref<any>, emit: any) {
   }
 
   const handleViewChange = (viewKey: string) => {
-    const viewData = viewTabs.value.find(v => v.key === viewKey)
-    if (viewData) {
-      currentView.value = viewKey
-      
-      // 应用视图的配置
-      if (config?.value) {
-        // 设置当前视图信息
-        config.value.currentViewKey = viewKey
-        config.value.currentViewFilter = viewData.filter || {}
-        
-        // 应用视图的配置，但保留原始数据和基础列配置
-        if (viewData.config) {
-          // 保存原始配置
-          const originalData = config.value.data
-          const originalColumns = config.value.columns
-          
-          // 合并视图配置
-          Object.keys(viewData.config).forEach(key => {
-            if (key === 'columns') {
-              // 对于列配置，使用视图的列配置，但如果视图没有指定则使用原始配置
-              config.value[key] = viewData.config[key] || originalColumns
-            } else if (viewData.config[key]) {
-              config.value[key] = { ...config.value[key], ...viewData.config[key] }
-            }
-          })
-          
-          // 确保数据不被覆盖
-          config.value.data = originalData
-        }
-        
-        // 触发数据重新计算
-        config.value.dataUpdateTrigger = Date.now()
-      }
-      
-      // 通知父组件视图切换
-      emit('viewChange', viewKey)
-    }
+    if (currentView.value === viewKey) return
+    currentView.value = viewKey
   }
 
   const handleViewMenuSelect = (key: string) => {
@@ -162,8 +119,8 @@ export function useViewManager(config: Ref<any>, emit: any) {
   }
 
   const handleViewsReorder = (draggedView: any, targetView: any) => {
+    if (draggedView.key === targetView.key) return
     tableStore.reorderViews(tableId, draggedView.key, targetView.key)
-    window.$message?.info(`已将"${draggedView.label}"移动到"${targetView.label}"附近`)
   }
 
   const handleEditView = (view: any) => {
@@ -299,6 +256,9 @@ export function useViewManager(config: Ref<any>, emit: any) {
     window.$message?.success('视图配置已导出')
   }
 
+  // 初始化视图列表
+  updateViewTabs()
+  
   // 初始化时应用默认视图
   if (config?.value?.views && config.value.views.length > 0) {
     const defaultView = config.value.views[0]
@@ -309,6 +269,7 @@ export function useViewManager(config: Ref<any>, emit: any) {
     viewTabs,
     currentView,
     currentViewName,
+    updateViewTabs,
     handleViewChange,
     handleViewMenuSelect,
     handleAddView,
