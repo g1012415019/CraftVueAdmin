@@ -227,8 +227,9 @@ const handleAdvancedSearch = () => {
 <style scoped>
 .filter-section {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
   padding: 12px;
   background: #fafbfc;
   border-radius: 6px;
@@ -237,18 +238,13 @@ const handleAdvancedSearch = () => {
 }
 
 .filter-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 300px);
-  gap: 8px 12px;
-  align-items: start;
-  flex: 1;
+  display: contents;
 }
 
 .filter-actions {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-left: 12px;
 }
 
 .drawer-header {
