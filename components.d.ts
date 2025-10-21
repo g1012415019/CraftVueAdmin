@@ -18,6 +18,7 @@ declare module '@vue/runtime-core' {
     ColumnSetting: typeof import('./src/components/Table/src/components/settings/ColumnSetting.vue')['default']
     ConfigPanel: typeof import('./src/components/TableLowcode2/Config/ConfigPanel.vue')['default']
     CountTo: typeof import('./src/components/CountTo/CountTo.vue')['default']
+    DataFilterForm: typeof import('./src/components/TableLowcode2/Config/forms/DataFilterForm.vue')['default']
     DataTable: typeof import('./src/components/TableLowcode2/Table/DataTable.vue')['default']
     EditableCell: typeof import('./src/components/Table/src/components/editable/EditableCell.vue')['default']
     FieldSettingsForm: typeof import('./src/components/TableLowcode2/Config/forms/FieldSettingsForm.vue')['default']

@@ -82,7 +82,7 @@
     </n-popover>
 
     <!-- 添加视图图标 -->
-    <n-tooltip trigger="hover">
+    <n-tooltip trigger="hover" placement="bottom">
       <template #trigger>
         <n-button size="tiny" quaternary @click="$emit('add-view')" title="添加视图">
           <template #icon>

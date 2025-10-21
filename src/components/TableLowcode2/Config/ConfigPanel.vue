@@ -1,5 +1,5 @@
 <template>
-  <n-drawer v-model:show="show" :width="800" placement="right">
+  <n-drawer v-model:show="show" :width="800" placement="right" :z-index="1000">
     <n-drawer-content closable :body-content-style="{ padding: '0' }">
       <template #header>
         <div @dblclick="startEditTitle" style="cursor: pointer;">
@@ -90,6 +90,7 @@ import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
 import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
 import SortSettingsForm from './forms/SortSettingsForm.vue';
 import FieldSettingsForm from './forms/FieldSettingsForm.vue';
+import DataFilterForm from './forms/DataFilterForm.vue';
 
 const props = defineProps<{
   show: boolean;
@@ -123,6 +124,11 @@ const show = computed({
 });
 
 const activeMenu = ref('basic');
+
+// 监听视图名称变化，重置菜单选择
+watch(() => props.currentViewName, () => {
+  activeMenu.value = 'basic';
+});
 
 // 导入导出功能
 const showImportModal = ref(false);
@@ -177,6 +183,7 @@ const menuGroups = [
     title: '数据处理',
     items: [
       { key: 'sort-filter', label: '排序', component: SortSettingsForm },
+      { key: 'data-filter', label: '数据过滤', component: DataFilterForm },
       { key: 'data', label: '筛选设置', component: FilterListSettingsForm },
     ]
   }
@@ -230,6 +237,8 @@ const handleImportConfig = () => {
   background: #f8f9fa;
   border-right: 1px solid #e5e7eb;
   padding: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .menu-groups {
