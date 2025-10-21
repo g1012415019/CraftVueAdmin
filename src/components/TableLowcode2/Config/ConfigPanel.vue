@@ -2,18 +2,23 @@
   <n-drawer v-model:show="show" :width="800" placement="right" :z-index="1000">
     <n-drawer-content closable :body-content-style="{ padding: '0' }">
       <template #header>
-        <div @dblclick="startEditTitle" style="cursor: pointer;">
-          <n-input
-            v-if="editingTitle"
-            v-model:value="tempTitle"
-            size="small"
-            @blur="finishEditTitle"
-            @keyup.enter="finishEditTitle"
-            @click.stop
-            autofocus
-            style="width: 200px;"
-          />
-          <span v-else>{{ drawerTitle }}</span>
+        <div class="drawer-header">
+          <div @dblclick="startEditTitle" style="cursor: pointer;">
+            <n-input
+              v-if="editingTitle"
+              v-model:value="tempTitle"
+              size="small"
+              @blur="finishEditTitle"
+              @keyup.enter="finishEditTitle"
+              @click.stop
+              autofocus
+              style="width: 200px;"
+            />
+            <span v-else>{{ drawerTitle }}</span>
+          </div>
+          <n-button size="small" @click="showConfigModal = true" type="primary" ghost>
+            查看配置
+          </n-button>
         </div>
       </template>
       <div class="config-panel">
@@ -81,6 +86,21 @@
       </n-space>
     </template>
   </n-modal>
+
+  <!-- 配置描述弹窗 -->
+  <n-modal v-model:show="showConfigModal" preset="dialog" title="完整配置描述" style="width: 600px;">
+    <template #header>
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span>完整配置描述</span>
+        <n-button size="small" @click="copyConfigDescription">复制描述</n-button>
+      </div>
+    </template>
+    <div class="config-modal-content">
+      <n-text style="font-size: 13px; line-height: 1.6; color: #555;">
+        {{ fullConfigDescription }}
+      </n-text>
+    </div>
+  </n-modal>
 </template>
 
 <script lang="ts" setup>
@@ -133,6 +153,12 @@ watch(() => props.currentViewName, () => {
 // 导入导出功能
 const showImportModal = ref(false);
 const importConfigText = ref('');
+const showConfigModal = ref(false);
+
+// 实时计算完整配置描述
+const fullConfigDescription = computed(() => {
+  return getFullConfigDescription();
+});
 
 const drawerTitle = computed(() => {
   return props.currentViewName || config.value?.basic?.title || '表格'
@@ -223,6 +249,319 @@ const handleImportConfig = () => {
     window.$message?.error('JSON 格式错误，请检查配置文件');
   }
 };
+
+// 获取完整配置描述
+const getFullConfigDescription = () => {
+  const parts: string[] = [];
+  
+  // 调试：显示配置对象结构
+  console.log('当前配置对象:', config.value);
+  
+  // 基础配置
+  if (config.value?.basic) {
+    const basic = config.value.basic;
+    parts.push(`查询表格"${basic.title || '数据表'}"`);
+    
+    if (basic.description) {
+      parts.push(`说明：${basic.description}`);
+    }
+  } else {
+    parts.push('查询表格"数据表"');
+  }
+  
+  // 列配置
+  if (config.value?.columns && Array.isArray(config.value.columns) && config.value.columns.length > 0) {
+    const visibleColumns = config.value.columns.filter((col: any) => col.show !== false);
+    if (visibleColumns.length > 0) {
+      const columnNames = visibleColumns.map((col: any) => col.title || col.key || col.label).join('、');
+      parts.push(`显示字段：${columnNames}`);
+      
+      // 排序配置
+      const sortedColumns = visibleColumns.filter((col: any) => col.sortable);
+      if (sortedColumns.length > 0) {
+        const sortNames = sortedColumns.map((col: any) => col.title || col.key || col.label).join('、');
+        parts.push(`可排序字段：${sortNames}`);
+      }
+    }
+  } else {
+    parts.push('显示字段：所有字段');
+  }
+  
+  // 数据过滤配置
+  if (config.value?.dataFilter?.groups && Array.isArray(config.value.dataFilter.groups)) {
+    const groups = config.value.dataFilter.groups;
+    const hasConditions = groups.some((g: any) => g.conditions && Array.isArray(g.conditions) && g.conditions.length > 0);
+    
+    if (hasConditions) {
+      parts.push('过滤条件：');
+      
+      const groupTexts = groups.map((group: any, groupIndex: number) => {
+        if (!group.conditions || !Array.isArray(group.conditions) || group.conditions.length === 0) return '';
+        
+        const conditionTexts = group.conditions.map((cond: any, index: number) => {
+          if (!cond.field || !cond.operator) return '';
+          
+          const field = cond.field;
+          const operator = getOperatorText(cond.operator);
+          const value = getValueText(cond);
+          
+          if (index === 0) {
+            return `${field}${operator}${value}`;
+          } else {
+            const prefix = cond.logic === 'OR' ? '或' : '且';
+            return `${prefix}${field}${operator}${value}`;
+          }
+        }).filter(text => text);
+        
+        if (conditionTexts.length === 0) return '';
+        
+        let groupText = conditionTexts.join('');
+        if (group.conditions.length > 1 && groupIndex > 0) {
+          groupText = `（${groupText}）`;
+        }
+        
+        return groupText;
+      }).filter(text => text);
+      
+      if (groupTexts.length > 0) {
+        if (groupTexts.length === 1) {
+          parts.push(`  当${groupTexts[0]}`);
+        } else {
+          let result = `  当${groupTexts[0]}`;
+          for (let i = 1; i < groupTexts.length; i++) {
+            const prevGroup = groups[i - 1];
+            const groupLogic = (prevGroup.groupLogic || 'AND') === 'AND' ? '且' : '或';
+            result += `${groupLogic}${groupTexts[i]}`;
+          }
+          parts.push(result);
+        }
+      }
+    }
+  }
+  
+  // 筛选器配置
+  if (config.value?.filters && Array.isArray(config.value.filters) && config.value.filters.length > 0) {
+    const activeFilters = config.value.filters.filter((f: any) => f.show !== false);
+    if (activeFilters.length > 0) {
+      const filterNames = activeFilters.map((f: any) => f.label || f.key || f.title).join('、');
+      parts.push(`筛选器：${filterNames}`);
+    }
+  }
+  
+  // 分页配置
+  if (config.value?.pagination) {
+    const pagination = config.value.pagination;
+    if (pagination.show !== false) {
+      const pageSize = pagination.pageSize || pagination.size || 10;
+      parts.push(`分页显示：每页${pageSize}条记录`);
+      
+      if (pagination.showSizeChanger) {
+        parts.push(`支持切换每页条数`);
+      }
+      
+      if (pagination.showQuickJumper) {
+        parts.push(`支持快速跳转页码`);
+      }
+    }
+  }
+  
+  // 操作配置
+  if (config.value?.actions && Array.isArray(config.value.actions) && config.value.actions.length > 0) {
+    const actionNames = config.value.actions.map((a: any) => a.label || a.key || a.title).join('、');
+    parts.push(`操作功能：${actionNames}`);
+  }
+  
+  // 生成类似SQL的描述
+  const sqlLikeDescription = generateSQLLikeDescription();
+  if (sqlLikeDescription) {
+    parts.push('');
+    parts.push('等效查询语句：');
+    parts.push(sqlLikeDescription);
+  }
+  
+  // 如果没有任何配置，显示默认信息
+  if (parts.length === 0) {
+    parts.push('暂无配置信息');
+    parts.push('请在左侧菜单中进行配置');
+  }
+  
+  return parts.join('\n');
+};
+
+// 生成类似SQL的描述
+const generateSQLLikeDescription = () => {
+  const tableName = config.value.basic?.title || 'table';
+  
+  // SELECT 部分
+  let selectPart = 'SELECT ';
+  if (config.value.columns && config.value.columns.length > 0) {
+    const visibleColumns = config.value.columns.filter((col: any) => col.show !== false);
+    if (visibleColumns.length > 0) {
+      selectPart += visibleColumns.map((col: any) => col.key).join(', ');
+    } else {
+      selectPart += '*';
+    }
+  } else {
+    selectPart += '*';
+  }
+  
+  // FROM 部分
+  const fromPart = `FROM ${tableName}`;
+  
+  // WHERE 部分
+  let wherePart = '';
+  if (config.value.dataFilter && config.value.dataFilter.groups) {
+    const groups = config.value.dataFilter.groups;
+    const hasConditions = groups.some((g: any) => g.conditions && g.conditions.length > 0);
+    
+    if (hasConditions) {
+      const whereConditions: string[] = [];
+      
+      groups.forEach((group: any, groupIndex: number) => {
+        if (!group.conditions || group.conditions.length === 0) return;
+        
+        const groupConditions = group.conditions
+          .filter((cond: any) => cond.field && cond.operator)
+          .map((cond: any, index: number) => {
+            const field = cond.field;
+            const operator = getSQLOperator(cond.operator);
+            const value = getSQLValue(cond);
+            
+            let conditionStr = `${field} ${operator} ${value}`;
+            
+            if (index > 0) {
+              const logic = cond.logic === 'OR' ? 'OR' : 'AND';
+              conditionStr = `${logic} ${conditionStr}`;
+            }
+            
+            return conditionStr;
+          });
+        
+        if (groupConditions.length > 0) {
+          let groupStr = groupConditions.join(' ');
+          
+          if (group.conditions.length > 1 && whereConditions.length > 0) {
+            groupStr = `(${groupStr})`;
+          }
+          
+          if (whereConditions.length > 0) {
+            const prevGroup = groups[groupIndex - 1];
+            const groupLogic = (prevGroup?.groupLogic || 'AND') === 'AND' ? 'AND' : 'OR';
+            groupStr = `${groupLogic} ${groupStr}`;
+          }
+          
+          whereConditions.push(groupStr);
+        }
+      });
+      
+      if (whereConditions.length > 0) {
+        wherePart = `WHERE ${whereConditions.join(' ')}`;
+      }
+    }
+  }
+  
+  // ORDER BY 部分
+  let orderPart = '';
+  if (config.value.columns) {
+    const sortedColumns = config.value.columns.filter((col: any) => col.defaultSort);
+    if (sortedColumns.length > 0) {
+      const orderItems = sortedColumns.map((col: any) => {
+        const direction = col.defaultSort === 'desc' ? 'DESC' : 'ASC';
+        return `${col.key} ${direction}`;
+      });
+      orderPart = `ORDER BY ${orderItems.join(', ')}`;
+    }
+  }
+  
+  // LIMIT 部分
+  let limitPart = '';
+  if (config.value.pagination && config.value.pagination.show !== false) {
+    const pageSize = config.value.pagination.pageSize || 10;
+    limitPart = `LIMIT ${pageSize}`;
+  }
+  
+  // 组合SQL
+  const sqlParts = [selectPart, fromPart, wherePart, orderPart, limitPart].filter(part => part);
+  return sqlParts.join('\n');
+};
+
+// 获取SQL操作符
+const getSQLOperator = (operator: string) => {
+  const operatorMap: Record<string, string> = {
+    'eq': '=',
+    'ne': '!=',
+    'gt': '>',
+    'lt': '<',
+    'gte': '>=',
+    'lte': '<=',
+    'contains': 'LIKE',
+    'not_contains': 'NOT LIKE',
+    'is': '=',
+    'is_not': '!=',
+    'between': 'BETWEEN',
+    'not_between': 'NOT BETWEEN'
+  };
+  return operatorMap[operator] || '=';
+};
+
+// 获取SQL值
+const getSQLValue = (condition: any) => {
+  if (condition.operator === 'contains' || condition.operator === 'not_contains') {
+    return `'%${condition.value || ''}%'`;
+  }
+  
+  if (condition.operator === 'between' || condition.operator === 'not_between') {
+    const min = condition.minValue || 0;
+    const max = condition.maxValue || 0;
+    return `${min} AND ${max}`;
+  }
+  
+  const value = condition.value || '';
+  if (typeof value === 'string') {
+    return `'${value}'`;
+  }
+  
+  return value;
+};
+
+// 获取操作符文本（复用DataFilterForm的方法）
+const getOperatorText = (operator: string) => {
+  const operatorMap: Record<string, string> = {
+    'eq': '等于',
+    'ne': '不等于', 
+    'contains': '包含',
+    'not_contains': '不包含',
+    'is': '是',
+    'is_not': '不是',
+    'gt': '大于',
+    'lt': '小于',
+    'gte': '≥',
+    'lte': '≤',
+    'between': '在范围',
+    'not_between': '不在范围'
+  };
+  return operatorMap[operator] || operator;
+};
+
+// 获取值文本（复用DataFilterForm的方法）
+const getValueText = (condition: any) => {
+  if (['between', 'not_between'].includes(condition.operator)) {
+    const min = condition.minValue || '最小值';
+    const max = condition.maxValue || '最大值';
+    return `${min}-${max}`;
+  }
+  return condition.value || '值';
+};
+
+// 复制配置描述
+const copyConfigDescription = async () => {
+  try {
+    await navigator.clipboard.writeText(getFullConfigDescription());
+    window.$message?.success('配置描述已复制到剪贴板');
+  } catch (error) {
+    window.$message?.error('复制失败，请手动复制');
+  }
+};
 </script>
 
 <style scoped>
@@ -304,5 +643,23 @@ const handleImportConfig = () => {
   padding: 16px 24px;
   border-top: 1px solid #e5e7eb;
   background: #f8f9fa;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.config-modal-content {
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-line;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 </style>
