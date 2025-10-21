@@ -9,7 +9,7 @@
         @menu-select="handleViewMenuSelect"
         @add-view="handleAddView"
         @views-reorder="handleViewsReorder"
-        @edit-view="handleEditView"
+        @edit-view="showConfigPanel = true"
         @duplicate-view="handleDuplicateView"
         @delete-view="handleDeleteView"
         @set-default="handleSetDefault"
@@ -36,7 +36,7 @@
       @refresh="handleRefreshView"
       @print="handlePrint"
       @fullscreen="handleFullscreen"
-      @config="emit('openConfig')"
+      @config="showConfigPanel = true"
     />
 
     <!-- 筛选控制区 -->
@@ -63,11 +63,22 @@
       @batch-action="handleBatchAction"
       @create="handleCreate"
       @print="handlePrint"
-      @config="emit('openConfig')"
+      @config="showConfigPanel = true"
       @update-checked-keys="updateCheckedRowKeys"
       @clear-selection="checkedRowKeys = []"
       @refresh="handleRefreshView"
       @fullscreen="handleFullscreen"
+    />
+    
+    <!-- 配置面板 -->
+    <ConfigPanel 
+      :show="showConfigPanel" 
+      :current-view-name="currentViewName"
+      :table-id="'default'"
+      :view-key="currentView"
+      @update:show="showConfigPanel = $event"
+      @config-change="handleConfigChange"
+      @update-view-name="handleUpdateViewName"
     />
   </div>
 </template>
@@ -79,6 +90,7 @@ import PaginationBar from './components/PaginationBar.vue'
 import ViewManager from './components/ViewManager/index.vue'
 import FilterSection from './components/FilterSection.vue'
 import TableSection from './components/TableSection.vue'
+import ConfigPanel from './Config/ConfigPanel.vue'
 import { useViewManager } from './composables/useViewManager'
 import { useTableData } from './composables/useTableData'
 import { useTableActions } from './composables/useTableActions'
@@ -87,6 +99,84 @@ import { useTableConfigStore } from '@/store/modules/tableConfig'
 const emit = defineEmits(['openConfig', 'viewNameChange', 'viewChange'])
 const config = inject('tableConfig') as Ref<any>
 const tableStore = useTableConfigStore()
+
+// 合并默认配置
+if (config?.value) {
+  const defaultConfig = {
+    basic: {
+      loading: false,
+      scrollX: undefined,
+      maxHeight: undefined,
+      height: undefined,
+      bordered: true,
+      striped: false,
+      compact: false,
+      size: 'medium',
+      fontSize: 14,
+      childrenKey: 'children',
+      defaultExpandAll: false,
+      showSummaryRow: false,
+      rowDensity: 'medium',
+      rowHeight: 36,
+      customRowHeight: undefined,
+      showRowNumber: false,
+      headerTextWrap: false
+    },
+    interaction: {
+      mode: 'classic',
+      showRecordShortcut: false
+    },
+    selection: {
+      allowCheckingNotLoaded: false,
+      cascade: false,
+      enabled: false
+    },
+    actionBar: {
+      enabled: true,
+      showCreate: true,
+      showImport: true,
+      showExport: true,
+      showRefresh: true,
+      showPrint: true,
+      showFullscreen: true,
+      showConfig: true
+    },
+    pagination: {
+      enabled: true,
+      defaultPageSize: 10,
+      showSizeChanger: true,
+      showQuickJumper: true,
+      pageSizeOptions: ['10', '20', '50', '100']
+    },
+    autoRefresh: {
+      enabled: false,
+      interval: 30
+    },
+    editing: {},
+    filters: [],
+    actions: [],
+    dataFilter: {
+      groups: [{
+        name: '条件组 1',
+        logic: 'AND',
+        groupLogic: 'AND',
+        conditions: []
+      }]
+    }
+  }
+  
+  // 深度合并配置
+  Object.keys(defaultConfig).forEach(key => {
+    if (!config.value[key]) {
+      config.value[key] = defaultConfig[key]
+    } else if (typeof defaultConfig[key] === 'object' && !Array.isArray(defaultConfig[key])) {
+      config.value[key] = { ...defaultConfig[key], ...config.value[key] }
+    }
+  })
+}
+
+// 配置面板控制
+const showConfigPanel = ref(false)
 
 // 使用组合式函数分离职责
 const {
@@ -164,6 +254,15 @@ const handleImport = (type: string) => {
 const handleExport = (type: string) => {
   console.log('导出:', type)
   config.value.events?.onExport?.(type)
+}
+
+// 配置面板处理
+const handleConfigChange = (newConfig: any) => {
+  console.log('配置已更新:', newConfig)
+}
+
+const handleUpdateViewName = (newName: string) => {
+  emit('viewNameChange', newName)
 }
 
 provide('checkedRowKeys', checkedRowKeys)

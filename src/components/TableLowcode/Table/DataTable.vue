@@ -77,17 +77,17 @@
 
 <script setup lang="ts">
 import { inject, onMounted, ref, computed, h, provide } from 'vue';
-import { useTableData } from '@/components/TableLowcode2/Table/composables/useTableData.tsx';
-import { useTableEditing } from '@/components/TableLowcode2/Table/composables/useTableEditing.tsx';
-import { useTableContextMenu } from '@/components/TableLowcode2/Table/composables/useTableContextMenu.tsx';
-import { useTableRowInteraction } from '@/components/TableLowcode2/Table/composables/useTableRowInteraction.tsx';
-import { useTableColumns } from '@/components/TableLowcode2/Table/composables/useTableColumns.tsx';
-import { useColumnDropdown } from '@/components/TableLowcode2/Table/composables/useColumnDropdown.tsx';
-import { useFloatingActionBar } from '@/components/TableLowcode2/Table/composables/useFloatingActionBar.tsx';
+import { useTableData } from './composables/useTableData.tsx';
+import { useTableEditing } from './composables/useTableEditing.tsx';
+import { useTableContextMenu } from './composables/useTableContextMenu.tsx';
+import { useTableRowInteraction } from './composables/useTableRowInteraction.tsx';
+import { useTableColumns } from './composables/useTableColumns.tsx';
+import { useColumnDropdown } from './composables/useColumnDropdown.tsx';
+import { useFloatingActionBar } from './composables/useFloatingActionBar.tsx';
 
-import { useAutoRefresh } from '@/components/TableLowcode2/Table/composables/useAutoRefresh.tsx';
+import { useAutoRefresh } from './composables/useAutoRefresh.tsx';
 
-import ColumnHeaderDropdown from '@/components/TableLowcode2/Table/ColumnHeaderDropdown.vue';
+import ColumnHeaderDropdown from './ColumnHeaderDropdown.vue';
 import { TableConfig } from '@/types/table';
 import type { DataTableRowKey } from 'naive-ui';
 
