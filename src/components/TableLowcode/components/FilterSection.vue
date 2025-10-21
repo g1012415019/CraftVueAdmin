@@ -1,48 +1,50 @@
 <template>
   <div v-if="shouldShowFilters" class="filter-section">
-    <!-- 基础筛选 - 显示所有字段 -->
-    <template v-for="field in filterBarFields" :key="field.key">
-      <FilterInput 
-        v-if="field.filterType === 'input'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterNumber 
-        v-else-if="field.filterType === 'number'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterDate 
-        v-else-if="field.filterType === 'date'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterDateRange 
-        v-else-if="field.filterType === 'daterange'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterSelect 
-        v-else-if="field.filterType === 'select'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterCheckbox 
-        v-else-if="field.filterType === 'checkbox'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterRadio 
-        v-else-if="field.filterType === 'radio'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-      <FilterSwitch 
-        v-else-if="field.filterType === 'switch'"
-        :config="field"
-        @update="handleFilterUpdate"
-      />
-    </template>
+    <div class="filter-container">
+      <!-- 基础筛选 - 显示所有字段 -->
+      <template v-for="field in filterBarFields" :key="field.key">
+        <FilterInput 
+          v-if="field.filterType === 'input'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterNumber 
+          v-else-if="field.filterType === 'number'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterDate 
+          v-else-if="field.filterType === 'date'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterDateRange 
+          v-else-if="field.filterType === 'daterange'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterSelect 
+          v-else-if="field.filterType === 'select'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterCheckbox 
+          v-else-if="field.filterType === 'checkbox'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterRadio 
+          v-else-if="field.filterType === 'radio'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+        <FilterSwitch 
+          v-else-if="field.filterType === 'switch'"
+          :config="field"
+          @update="handleFilterUpdate"
+        />
+      </template>
+    </div>
 
     <!-- 操作区域 -->
     <div class="filter-actions">
@@ -224,10 +226,9 @@ const handleAdvancedSearch = () => {
 
 <style scoped>
 .filter-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 300px);
-  gap: 8px 12px;
-  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   padding: 12px;
   background: #fafbfc;
   border-radius: 6px;
@@ -235,11 +236,19 @@ const handleAdvancedSearch = () => {
   margin-bottom: 12px;
 }
 
+.filter-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 300px);
+  gap: 8px 12px;
+  align-items: start;
+  flex: 1;
+}
+
 .filter-actions {
   display: flex;
   gap: 8px;
-  grid-column: -1;
-  justify-self: end;
+  align-items: center;
+  margin-left: 12px;
 }
 
 .drawer-header {
