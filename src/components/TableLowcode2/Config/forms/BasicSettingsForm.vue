@@ -291,12 +291,12 @@
         <div class="section-title">自动刷新</div>
         <div class="config-grid">
           <n-form-item label="自动刷新">
-            <n-switch v-model:value="config.autoRefresh.enabled" size="small" />
+            <n-switch v-model:value="autoRefreshEnabled" size="small" />
           </n-form-item>
           
-          <n-form-item label="刷新间隔" v-if="config.autoRefresh.enabled">
+          <n-form-item label="刷新间隔" v-if="autoRefreshEnabled">
             <div class="input-with-unit">
-              <n-input-number v-model:value="config.autoRefresh.interval" :min="10" :max="300" size="small" style="width: 80px;" />
+              <n-input-number v-model:value="autoRefreshInterval" :min="10" :max="300" size="small" style="width: 80px;" />
               <span>秒</span>
             </div>
           </n-form-item>
@@ -317,9 +317,26 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue';
+import { inject, ref, watch, computed, type Ref } from 'vue';
 
 const config = inject('tableConfig') as Ref<any>;
+
+// autoRefresh 计算属性
+const autoRefreshEnabled = computed({
+  get: () => config.value.autoRefresh?.enabled || false,
+  set: (value) => {
+    if (!config.value.autoRefresh) config.value.autoRefresh = {};
+    config.value.autoRefresh.enabled = value;
+  }
+});
+
+const autoRefreshInterval = computed({
+  get: () => config.value.autoRefresh?.interval || 30,
+  set: (value) => {
+    if (!config.value.autoRefresh) config.value.autoRefresh = {};
+    config.value.autoRefresh.interval = value;
+  }
+});
 
 // 帮助显示控制
 const showHelp = ref(false);

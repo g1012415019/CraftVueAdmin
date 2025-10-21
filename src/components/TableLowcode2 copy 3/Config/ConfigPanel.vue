@@ -19,25 +19,7 @@
             </div>
             <div class="view-info">
               <n-text depth="3" style="font-size: 11px;">
-                表格ID: {{ tableId }} | 视图ID: 
-                <span @dblclick="startEditViewKey" style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                  <n-input
-                    v-if="editingViewKey"
-                    v-model:value="tempViewKey"
-                    size="tiny"
-                    @blur="finishEditViewKey"
-                    @keyup.enter="finishEditViewKey"
-                    @click.stop
-                    autofocus
-                    style="width: 180px;"
-                  />
-                  <template v-else>
-                    {{ viewKey }}
-                    <n-icon size="12" style="opacity: 0.6;">
-                      <EditIcon />
-                    </n-icon>
-                  </template>
-                </span>
+                表格ID: {{ tableId }} | 视图ID: {{ viewKey }}
               </n-text>
             </div>
           </div>
@@ -159,50 +141,20 @@ const config = computed({
     let storeConfig = tableConfigStore.getViewConfig(tableId.value, viewKey.value);
     if (!storeConfig) {
       // 创建默认配置
-      const defaultConfig = {
+      storeConfig = {
         basic: {
           title: '数据表',
-          description: '',
-          rowDensity: 'medium',
-          rowHeight: 36,
-          showRowNumber: false,
-          bordered: true,
-          striped: false,
-          headerTextWrap: false,
-          showSummaryRow: false
+          description: ''
         },
         columns: [],
         pagination: {
-          enabled: true,
-          defaultPageSize: 10,
+          show: true,
+          pageSize: 10,
           showSizeChanger: true,
-          showQuickJumper: true,
-          pageSizeOptions: ['10', '20', '50', '100']
+          showQuickJumper: true
         },
         filters: [],
         actions: [],
-        autoRefresh: {
-          enabled: false,
-          interval: 30
-        },
-        selection: {
-          enabled: false
-        },
-        actionBar: {
-          enabled: true,
-          showCreate: true,
-          showImport: true,
-          showExport: true,
-          showRefresh: true,
-          showPrint: true,
-          showFullscreen: true,
-          showConfig: true
-        },
-        interaction: {
-          mode: 'classic',
-          showRecordShortcut: false
-        },
-        editing: {},
         dataFilter: {
           groups: [{
             name: '条件组 1',
@@ -213,8 +165,7 @@ const config = computed({
         }
       };
       // 保存默认配置到 store
-      tableConfigStore.saveViewConfig(tableId.value, viewKey.value, defaultConfig);
-      return defaultConfig;
+      tableConfigStore.saveViewConfig(tableId.value, viewKey.value, storeConfig);
     }
     return storeConfig;
   },
@@ -230,7 +181,6 @@ const emit = defineEmits<{
   'update:show': [value: boolean];
   'config-change': [config: any];
   'update-view-name': [name: string];
-  'update-view-key': [key: string];
 }>();
 
 // 监听配置变化，实时更新表格和保存到 store
@@ -238,11 +188,13 @@ watch(
   () => config.value,
   (newConfig) => {
     if (newConfig) {
+      // 保存到 store
+      tableConfigStore.saveViewConfig(tableId.value, viewKey.value, newConfig);
       // 通知父组件配置变化
       emit('config-change', newConfig);
     }
   },
-  { deep: true, flush: 'post' }
+  { deep: true }
 );
 
 const show = computed({
@@ -254,11 +206,6 @@ const show = computed({
 
 const activeMenu = ref('basic');
 
-// 弹窗控制
-const showConfigModal = ref(false);
-const showImportModal = ref(false);
-const importConfigText = ref('');
-
 // 监听视图名称变化，重置菜单选择
 watch(() => props.currentViewName, () => {
   activeMenu.value = 'basic';
@@ -266,64 +213,7 @@ watch(() => props.currentViewName, () => {
 
 // 实时计算完整配置描述
 const fullConfigDescription = computed(() => {
-  // 确保配置变化时重新计算
-  const currentConfig = config.value;
-  if (!currentConfig) return '暂无配置信息';
-  
-  const parts: string[] = [];
-  
-  // 基础配置
-  if (currentConfig.basic) {
-    const basic = currentConfig.basic;
-    parts.push(`查询表格"${basic.title || '数据表'}"`);
-    
-    if (basic.description) {
-      parts.push(`说明：${basic.description}`);
-    }
-  } else {
-    parts.push('查询表格"数据表"');
-  }
-  
-  // 列配置
-  if (currentConfig.columns && Array.isArray(currentConfig.columns) && currentConfig.columns.length > 0) {
-    const visibleColumns = currentConfig.columns.filter((col: any) => col.show !== false);
-    if (visibleColumns.length > 0) {
-      const columnNames = visibleColumns.map((col: any) => col.title || col.key || col.label).join('、');
-      parts.push(`显示字段：${columnNames}`);
-      
-      // 排序配置
-      const sortedColumns = visibleColumns.filter((col: any) => col.sortable);
-      if (sortedColumns.length > 0) {
-        const sortNames = sortedColumns.map((col: any) => col.title || col.key || col.label).join('、');
-        parts.push(`可排序字段：${sortNames}`);
-      }
-    }
-  } else {
-    parts.push('显示字段：所有字段');
-  }
-  
-  // 分页配置
-  if (currentConfig.pagination && currentConfig.pagination.enabled === true) {
-    const pagination = currentConfig.pagination;
-    const pageSize = pagination.defaultPageSize || pagination.pageSize || 10;
-    parts.push(`分页显示：每页${pageSize}条记录`);
-    
-    if (pagination.showSizeChanger) {
-      parts.push(`支持切换每页条数`);
-    }
-    
-    if (pagination.showQuickJumper) {
-      parts.push(`支持快速跳转页码`);
-    }
-  }
-  
-  // 如果没有任何配置，显示默认信息
-  if (parts.length === 0) {
-    parts.push('暂无配置信息');
-    parts.push('请在左侧菜单中进行配置');
-  }
-  
-  return parts.join('\n');
+  return getFullConfigDescription();
 });
 
 const drawerTitle = computed(() => {
@@ -343,10 +233,6 @@ const getCurrentViewName = () => {
 const editingTitle = ref(false);
 const tempTitle = ref('');
 
-// 编辑视图ID
-const editingViewKey = ref(false);
-const tempViewKey = ref('');
-
 const startEditTitle = () => {
   editingTitle.value = true;
   tempTitle.value = props.currentViewName || '表格';
@@ -356,17 +242,6 @@ const finishEditTitle = () => {
   // 这里需要通过事件通知父组件更新视图名称
   emit('update-view-name', tempTitle.value);
   editingTitle.value = false;
-};
-
-const startEditViewKey = () => {
-  editingViewKey.value = true;
-  tempViewKey.value = viewKey.value;
-};
-
-const finishEditViewKey = () => {
-  // 这里需要通过事件通知父组件更新视图key
-  emit('update-view-key', tempViewKey.value);
-  editingViewKey.value = false;
 };
 
 const menuGroups = [

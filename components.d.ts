@@ -92,6 +92,6 @@ declare module '@vue/runtime-core' {
     TableSection: typeof import('./src/components/TableLowcode2/components/TableSection.vue')['default']
     ViewBar: typeof import('./src/components/TableLowcode2/components/ViewBar.vue')['default']
     ViewDemo: typeof import('./src/components/TableLowcode2/ViewDemo.vue')['default']
-    ViewManager: typeof import('./src/components/TableLowcode2 copy/components/ViewManager.vue')['default']
+    ViewManager: typeof import('./src/components/TableLowcode2/components/ViewManager/index.vue')['default']
   }
 }

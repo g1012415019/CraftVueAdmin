@@ -4,11 +4,14 @@
       ref="tableRef"
       @open-config="showConfigPanel = true" 
       @view-name-change="currentViewName = $event"
+      @view-change="handleViewChange"
     />
     
     <ConfigPanel 
       :show="showConfigPanel" 
       :current-view-name="currentViewName"
+      :table-id="tableId"
+      :view-key="currentViewKey"
       @update:show="showConfigPanel = $event"
       @config-change="handleConfigChange"
       @update-view-name="handleUpdateViewName"
@@ -25,8 +28,17 @@ import { useTableConfigStore } from '@/store/modules/tableConfig';
 
 const showConfigPanel = ref(false);
 const tableStore = useTableConfigStore();
-const currentViewName = ref('默认视图'); // 直接使用响应式变量
-const tableRef = ref(); // 添加 ref 引用
+const currentViewName = ref('默认视图');
+const tableRef = ref();
+
+// 可配置的 tableId 和 viewKey
+const tableId = ref('default'); // 改为和useViewManager一致
+const currentViewKey = computed(() => {
+  // 从store获取当前视图key
+  const views = tableStore.getViews(tableId.value);
+  const currentView = views.find((v: any) => v.label === currentViewName.value);
+  return currentView?.key || 'default';
+});
 
 // 简化配置 - 只需要核心参数
 const simpleConfig = {
@@ -94,8 +106,27 @@ const handleConfigChange = (newConfig: any) => {
 // 处理视图名称更新
 const handleUpdateViewName = (newName: string) => {
   currentViewName.value = newName;
+  
+  // 更新 store 中的视图名称
+  tableStore.updateView(tableId.value, currentViewKey.value, { 
+    label: newName,
+    name: newName 
+  });
+  
   // 调用子组件的方法更新视图名称
   tableRef.value?.updateCurrentViewName?.(newName);
+};
+
+// 处理视图切换
+const handleViewChange = (viewKey: string) => {
+  console.log('切换到视图:', viewKey);
+  
+  // 获取视图信息更新名称
+  const views = tableStore.getViews(tableId.value);
+  const view = views.find((v: any) => v.key === viewKey);
+  if (view) {
+    currentViewName.value = view.label || view.name || '视图';
+  }
 };
 
 // 提供配置给子组件
