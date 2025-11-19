@@ -38,9 +38,18 @@ const tableConfig: ExternalConfig = {
       description: '显示所有员工信息',
       /** 只覆盖标题 */
       basic: {
-        title: '全部员工列表',
         size: "large",
         density: 'comfortable',
+      },
+      "sort": {
+        "customFields": [
+          {
+            "key": "id",
+            "label": "ID",
+            "defaultOrder": "asc",
+            "sortType": "text"
+          }
+        ]
       },
       filterList: {
         "filters": [

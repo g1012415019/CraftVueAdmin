@@ -5,7 +5,7 @@
 
 // 各表单组件类型
 export type { BasicSettingsConfig } from './basicSettings'
-export type { SortConfig } from './sortSettings'
+export type { SortConfig,SortableField } from './sortSettings'
 export type { PaginationSettingsConfig } from './paginationSettings'
 export type { DataFilterConfig } from './dataFilter'
 export type { FilterListSettingsConfig } from './filterListSettings'

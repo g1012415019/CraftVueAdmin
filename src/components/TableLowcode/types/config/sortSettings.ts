@@ -19,10 +19,4 @@ export interface SortableField extends TableColumn {
 export interface SortConfig {
   /** 自定义排序字段列表 */
   customFields?: SortableField[]
-  /** 默认排序字段 */
-  defaultField?: string
-  /** 默认排序方向 */
-  defaultDirection?: 'asc' | 'desc'
-  /** 是否支持多列排序 */
-  multiSort?: boolean
 }

@@ -10,7 +10,7 @@ export interface TableColumn {
   /** 列的备用标题，优先级高于 label */
   title?: string
   /** 列是否可见 */
-  visible: boolean
+  visible?: boolean
   /** 列的固定宽度（像素） */
   width?: number
   /** 列的最小宽度（像素） */

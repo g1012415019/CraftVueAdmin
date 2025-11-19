@@ -64,10 +64,7 @@ export class ConfigManager {
    */
   static getSortDefaults(): SortConfig {
     return {
-      customFields: [],
-      defaultField: '',
-      defaultDirection: 'asc',
-      multiSort: false
+      customFields: []
     }
   }
 
@@ -76,7 +73,6 @@ export class ConfigManager {
    */
   static getFilterListDefaults(): FilterListConfig {
     return {
-      enabled: true,
       filters: []
     }
   }
@@ -98,7 +94,6 @@ export class ConfigManager {
   static getDataFilterDefaults(): DataFilterConfig {
     return {
       enabled: true,
-      filters: []
     }
   }
 
@@ -129,7 +124,7 @@ export class ConfigManager {
     }
     
     if (!view.sort) {
-      view.sort = this.getSortDefaults()
+      view.sort ={...this.getSortDefaults(), ...view.sort}
     }
     
     if (!view.filterList) {

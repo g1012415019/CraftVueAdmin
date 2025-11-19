@@ -41,6 +41,7 @@
               </n-text>
             </div>
           </div>
+
           <n-button size="small" @click="showConfigModal = true" type="primary" ghost>
             查看配置
           </n-button>

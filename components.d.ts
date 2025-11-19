@@ -16,7 +16,7 @@ declare module '@vue/runtime-core' {
     ColumnHeaderDropdown: typeof import('./src/components/TableLowcode/Table/ColumnHeaderDropdown.vue')['default']
     ColumnSetting: typeof import('./src/components/Table/src/components/settings/ColumnSetting.vue')['default']
     ConfigPanel: typeof import('./src/components/TableLowcode/Config/ConfigPanel.vue')['default']
-    copy: typeof import('./src/components/TableLowcode/TableLowcode copy.vue')['default']
+    copy: typeof import('./src/components/TableLowcode/Config/forms/SortSettingsForm copy.vue')['default']
     CountTo: typeof import('./src/components/CountTo/CountTo.vue')['default']
     DataFilterForm: typeof import('./src/components/TableLowcode/Config/forms/DataFilterForm.vue')['default']
     DataTable: typeof import('./src/components/TableLowcode/Table/DataTable.vue')['default']

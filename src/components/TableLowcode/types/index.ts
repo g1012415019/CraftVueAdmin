@@ -48,6 +48,7 @@ export type {
 export type { 
   DataFilterConfig, 
   SortConfig,
+  SortableField,
   BasicSettingsConfig,
   PaginationSettingsConfig,
   FilterListSettingsConfig,
