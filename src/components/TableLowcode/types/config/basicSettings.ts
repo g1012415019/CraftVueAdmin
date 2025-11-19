@@ -1,5 +1,5 @@
 /**
- * 基础设置表单类型定义
+ * 基础设置配置接口
  * 对应 Config/forms/BasicSettingsForm.vue
  */
 

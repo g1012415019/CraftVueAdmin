@@ -1,433 +1,205 @@
 <template>
   <div class="sort-settings">
-    <n-form label-placement="left" label-width="70px" size="small">
+    <n-space direction="vertical" size="large">
       
-      <!-- 排序管理 -->
-      <div class="config-section">
+      <!-- 自定义排序 -->
+      <div class="sort-section">
         <div class="section-header">
-          <div class="section-title">排序管理</div>
-          <div class="help-toggle">
-            <n-switch v-model:value="showHelp" size="small" />
-            <span>显示帮助</span>
-          </div>
-        </div>
-        <div class="config-grid">
-          <n-form-item label="启用排序" class="full-width">
-            <n-switch v-model:value="enableSort" size="small" />
-          </n-form-item>
-          
-          <n-form-item label="排序模式" class="full-width" v-if="enableSort">
-            <n-radio-group v-model:value="sortMode" size="small">
-              <n-space>
-                <n-radio value="single">单字段</n-radio>
-                <n-radio value="multiple">多字段</n-radio>
-              </n-space>
-            </n-radio-group>
-          </n-form-item>
-          
-          <n-form-item label="默认排序" class="full-width">
-            <n-space>
-              <n-select
-                v-model:value="defaultSortField"
-                :options="defaultSortFieldOptions"
-                size="small"
-                style="width: 120px;"
-                placeholder="选择字段"
-              />
-              <n-select
-                v-model:value="defaultSortOrder"
-                :options="getSortOrderOptions(defaultSortField)"
-                size="small"
-                style="width: 100px;"
-                placeholder="排序方向"
-              />
-            </n-space>
-          </n-form-item>
+          <n-text class="section-title">自定义排序</n-text>
+          <n-button size="tiny" type="primary" @click="addCustomSort">
+            <template #icon>
+              <n-icon><PlusIcon /></n-icon>
+            </template>
+            添加
+          </n-button>
         </div>
         
-        <div v-if="showHelp" class="help-section">
-          <div class="help-item">
-            <strong>启用排序：</strong>是否允许用户对表格进行排序
-          </div>
-          <div class="help-item">
-            <strong>排序模式：</strong>单字段只能按一个字段排序，多字段可按多个字段排序
-          </div>
-          <div class="help-item">
-            <strong>默认排序：</strong>表格初始加载时的排序规则
-          </div>
-        </div>
-        
-        <!-- 搜索框 -->
-        <n-input
-          v-model:value="searchKeyword"
-          placeholder="输入字段名称搜索"
-          size="small"
-          clearable
-          style="margin-top: 12px;"
-        >
-          <template #prefix>
-            <n-icon>
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            </n-icon>
-          </template>
-        </n-input>
-        
-        <!-- 批量操作 -->
-        <div class="batch-actions" style="margin-top: 12px;">
-          <n-space>
-            <n-checkbox 
-              :checked="isAllSelected"
-              :indeterminate="isIndeterminate"
-              @update:checked="handleSelectAll"
-              size="small"
-            >
-              全选
-            </n-checkbox>
-            <n-select
-              v-model:value="batchAction"
-              size="small"
-              style="width: 120px;"
-              placeholder="批量操作"
-              :options="[
-                { label: '启用排序', value: 'enable' },
-                { label: '禁用排序', value: 'disable' },
-                { label: '设为升序', value: 'asc' },
-                { label: '设为降序', value: 'desc' }
-              ]"
-              @update:value="handleBatchAction"
-              :disabled="selectedFieldsCount === 0"
-            />
-            <n-text depth="3" style="font-size: 12px;">
-              已启用 {{ enabledSortCount }} / {{ filteredFields.length }} 个字段
-            </n-text>
-          </n-space>
-        </div>
-        
-        <!-- 字段列表 -->
-        <div class="field-list" style="margin-top: 8px;">
-          <!-- 表头 -->
-          <div class="field-header-row">
-            <div class="header-left">
-              <span style="width: 24px;"></span>
-              <span style="width: 20px;"></span>
-              <span style="width: 120px;">字段名</span>
-            </div>
-            <div class="header-controls">
-              <span style="width: 80px;">排序类型</span>
-              <span style="width: 100px;">默认方向</span>
-              <span style="width: 40px;">状态</span>
-            </div>
-          </div>
-          
-          <div 
-            v-for="(field, index) in filteredFields" 
-            :key="field.key" 
-            class="field-item"
-            draggable="true"
-            @dragstart="handleDragStart(index)"
-            @dragover.prevent
-            @drop="handleDrop(index)"
+        <div v-if="formState.customFields && formState.customFields.length > 0" class="sort-list">
+          <draggable 
+            v-model="formState.customFields" 
+            item-key="key"
+            handle=".drag-handle"
+            @change="handleDragChange"
           >
-            <div class="field-content">
-              <div class="field-row">
-                <div class="field-left">
-                  <n-checkbox 
-                    v-model:checked="field.selected" 
-                    size="small"
-                    @click.stop
-                  />
-                  <n-icon size="14" class="drag-handle">
-                    <svg viewBox="0 0 24 24">
-                      <path fill="currentColor" d="M9 3h2v2H9V3zm4 0h2v2h-2V3zM9 7h2v2H9V7zm4 0h2v2h-2V7zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2z"/>
-                    </svg>
-                  </n-icon>
-                  <div class="field-name-area" style="width: 120px;">
-                    <n-text strong style="display: block; font-size: 13px; cursor: pointer; padding: 4px 0;">
-                      {{ field.label }}
-                    </n-text>
-                  </div>
+            <template #item="{ element, index }">
+              <div class="sort-item">
+                <div class="drag-handle">
+                  <n-icon><DragIcon /></n-icon>
                 </div>
-                <div class="field-controls">
-                  <div class="control-item" style="width: 80px;">
-                    <n-select 
-                      v-model:value="field.sortType" 
-                      size="small"
-                      :options="sortTypeOptions"
-                      @click.stop
-                    />
-                  </div>
-                  <div class="control-item" style="width: 100px;">
-                    <n-select 
-                      v-model:value="field.defaultOrder" 
-                      size="small"
-                      :options="getFieldSortOptions(field.sortType)"
-                      @click.stop
-                    />
-                  </div>
-                  <div class="control-item" style="width: 40px;">
-                    <n-switch 
-                      v-model:value="field.sortable" 
-                      size="small"
-                      @click.stop
-                    />
-                  </div>
-                </div>
+                
+                <n-select
+                  v-model:value="element.key"
+                  :options="availableFieldOptions"
+                  size="small"
+                  style="width: 120px"
+                  placeholder="选择字段"
+                  @update:value="updateFieldKey(index, $event)"
+                />
+                
+                <n-select
+                  v-model:value="element.defaultOrder"
+                  :options="orderOptions"
+                  size="small"
+                  style="width: 80px"
+                  placeholder="方向"
+                />
+                
+                <n-button size="tiny" type="error" @click="removeCustomSort(index)">
+                  <template #icon>
+                    <n-icon><DeleteIcon /></n-icon>
+                  </template>
+                </n-button>
               </div>
-            </div>
-          </div>
+            </template>
+          </draggable>
         </div>
         
-        <div v-if="filteredFields.length === 0" class="empty-state">
-          <n-empty description="未找到匹配的字段" size="small" />
+        <div v-else class="empty-state">
+          <n-text depth="3">暂无自定义排序，点击"添加"按钮创建</n-text>
         </div>
       </div>
 
-      <!-- 排序预览 -->
-      <div v-if="defaultSortField || enabledSortCount > 0" class="config-section">
-        <div class="section-title">排序预览</div>
-        <n-alert type="success" :show-icon="false">
-          <div style="font-size: 12px;">
-            {{ getFullSortPreview() }}
-          </div>
-        </n-alert>
+      <n-divider />
+
+      <!-- 默认排序 -->
+      <div class="sort-section">
+        <div class="section-header">
+          <n-text class="section-title">默认排序</n-text>
+          <n-text depth="3" style="font-size: 12px;">无自定义排序时生效</n-text>
+        </div>
+        
+        <n-space>
+          <n-select
+            v-model:value="formState.defaultField"
+            :options="availableFieldOptions"
+            size="small"
+            style="width: 120px"
+            placeholder="选择字段"
+            clearable
+          />
+          <n-select
+            v-model:value="formState.defaultDirection"
+            :options="orderOptions"
+            size="small"
+            style="width: 80px"
+            placeholder="方向"
+          />
+        </n-space>
       </div>
 
-    </n-form>
+      <n-divider />
+
+      <!-- 排序选项 -->
+      <div class="sort-section">
+        <n-checkbox v-model:checked="formState.multiSort">
+          支持多列排序
+        </n-checkbox>
+      </div>
+
+    </n-space>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
-import type { SortConfig } from '../../types/config/sortSettings'
-import type { TableColumn } from '../../types/table/column'
-import { debounce } from '../../utils/debounce'
+import { ref, computed, watch } from 'vue'
+import { PlusOutlined as PlusIcon, DeleteOutlined as DeleteIcon, DragOutlined as DragIcon } from '@vicons/antd'
+import draggable from 'vuedraggable'
+import type { SortConfig, SortableField } from '../../types'
 import { ConfigManager } from '../../utils/configManager'
-
-// ==================== 类型定义 ====================
-
-interface Props {
-  initialConfig?: Partial<SortConfig>
-  columns?: TableColumn[]
-}
 
 // ==================== 组件定义 ====================
 
-const props = withDefaults(defineProps<Props>(), {
-  initialConfig: () => ({}),
-  columns: () => []
-})
-
-const emit = defineEmits<{
-  configChange: [config: SortConfig]
+const props = defineProps<{
+  config?: SortConfig
+  availableFields?: Array<{ label: string; value: string; type?: string }>
 }>()
 
-// ==================== 组件内状态 ====================
+const emit = defineEmits<{
+  'config-change': [config: SortConfig]
+}>()
+
+// ==================== 表单状态 ====================
 
 const formState = ref<SortConfig>({
-  // 使用 ConfigManager 提供的默认值
   ...ConfigManager.getSortDefaults(),
-  // 初始化字段配置
-  fields: props.columns.map(col => ({ 
-    ...col, 
-    selected: false,
-    sortType: 'text',
-    defaultOrder: 'asc'
-  })) || [],
-  
-  // 合并Props传入的初始配置
-  ...props.initialConfig
-})
-
-// 其他状态
-const searchKeyword = ref('')
-const showHelp = ref(false)
-const batchAction = ref<string | null>(null)
-const dragStartIndex = ref<number>(-1)
-
-// 便捷访问
-const enableSort = computed({
-  get: () => formState.value.enabled,
-  set: (val) => formState.value.enabled = val
-})
-
-const sortMode = computed({
-  get: () => formState.value.multiSort ? 'multiple' : 'single',
-  set: (val) => formState.value.multiSort = val === 'multiple'
-})
-
-const defaultSortField = computed({
-  get: () => formState.value.defaultField,
-  set: (val) => formState.value.defaultField = val
-})
-
-const defaultSortOrder = computed({
-  get: () => formState.value.defaultDirection,
-  set: (val) => formState.value.defaultDirection = val
+  ...props.config
 })
 
 // ==================== 计算属性 ====================
 
-const fieldOptions = computed(() => {
-  return props.columns.map(col => ({
-    label: col.title || col.key,
-    value: col.key
-  }))
-})
-
-const filteredFields = computed(() => {
-  if (!searchKeyword.value) return formState.value.fields || []
-  
-  return formState.value.fields?.filter(field => 
-    (field.title || field.key).toLowerCase().includes(searchKeyword.value.toLowerCase())
-  ) || []
-})
-
-const selectedFieldsCount = computed(() => {
-  return formState.value.fields?.filter(field => field.selected).length || 0
-})
-
-const enabledSortCount = computed(() => {
-  return formState.value.fields?.filter(field => field.sortable).length || 0
-})
-
-const isAllSelected = computed(() => {
-  return filteredFields.value.length > 0 && 
-         filteredFields.value.every(field => field.selected)
-})
-
-const isIndeterminate = computed(() => {
-  const selectedCount = filteredFields.value.filter(field => field.selected).length
-  return selectedCount > 0 && selectedCount < filteredFields.value.length
-})
-
-const defaultSortFieldOptions = computed(() => {
-  return formState.value.fields?.map(field => ({
-    label: field.title || field.key,
-    value: field.key,
-    type: field.sortType || 'text'
+const availableFieldOptions = computed(() => 
+  props.availableFields?.map(field => ({
+    label: field.label,
+    value: field.value
   })) || []
-})
+)
 
-const sortTypeOptions = [
-  { label: '文本', value: 'text' },
-  { label: '数字', value: 'number' },
-  { label: '日期', value: 'date' }
+const orderOptions = [
+  { label: '升序', value: 'asc' },
+  { label: '降序', value: 'desc' }
 ]
 
-// ==================== 工具函数 ====================
+// ==================== 自定义排序操作 ====================
 
-const emitConfigChange = debounce(() => {
-  const configCopy = { ...formState.value }
-  emit('configChange', configCopy)
-}, 300)
-
-const handleSelectAll = (checked: boolean) => {
-  filteredFields.value.forEach(field => {
-    field.selected = checked
-  })
+const addCustomSort = () => {
+  if (!formState.value.customFields) {
+    formState.value.customFields = []
+  }
+  
+  const newField: SortableField = {
+    key: '',
+    label: '',
+    defaultOrder: 'asc',
+    sortType: 'text'
+  }
+  
+  formState.value.customFields.push(newField)
 }
 
-const handleBatchAction = (action: string) => {
-  const selectedFields = formState.value.fields?.filter(field => field.selected) || []
-  
-  selectedFields.forEach(field => {
-    switch (action) {
-      case 'enable':
-        field.sortable = true
-        break
-      case 'disable':
-        field.sortable = false
-        break
-      case 'asc':
-        field.defaultOrder = 'asc'
-        break
-      case 'desc':
-        field.defaultOrder = 'desc'
-        break
+const removeCustomSort = (index: number) => {
+  if (formState.value.customFields) {
+    formState.value.customFields.splice(index, 1)
+  }
+}
+
+const updateFieldKey = (index: number, fieldKey: string) => {
+  if (formState.value.customFields && formState.value.customFields[index]) {
+    const field = props.availableFields?.find(f => f.value === fieldKey)
+    if (field) {
+      formState.value.customFields[index].key = fieldKey
+      formState.value.customFields[index].label = field.label
+      formState.value.customFields[index].sortType = field.type as any || 'text'
     }
-    field.selected = false
-  })
-  
-  batchAction.value = null
-}
-
-const handleDragStart = (index: number) => {
-  dragStartIndex.value = index
-}
-
-const handleDrop = (dropIndex: number) => {
-  if (dragStartIndex.value === -1 || dragStartIndex.value === dropIndex) return
-  
-  const fields = [...(formState.value.fields || [])]
-  const draggedField = fields[dragStartIndex.value]
-  fields.splice(dragStartIndex.value, 1)
-  fields.splice(dropIndex, 0, draggedField)
-  
-  formState.value.fields = fields
-  dragStartIndex.value = -1
-}
-
-const getSortOrderOptions = (fieldValue: string) => {
-  const field = defaultSortFieldOptions.value.find(f => f.value === fieldValue)
-  const type = field?.type || 'text'
-  return getFieldSortOptions(type)
-}
-
-const getFieldSortOptions = (sortType: string) => {
-  switch (sortType) {
-    case 'date':
-      return [
-        { label: '最新在前', value: 'desc' },
-        { label: '最旧在前', value: 'asc' }
-      ]
-    case 'number':
-      return [
-        { label: '大到小(9-0)', value: 'desc' },
-        { label: '小到大(0-9)', value: 'asc' }
-      ]
-    case 'text':
-      return [
-        { label: '字母顺序(A-Z)', value: 'asc' },
-        { label: '字母倒序(Z-A)', value: 'desc' }
-      ]
-    default:
-      return [
-        { label: '升序', value: 'asc' },
-        { label: '降序', value: 'desc' }
-      ]
   }
 }
 
-const getFullSortPreview = () => {
-  const parts: string[] = []
-  
-  if (defaultSortField.value) {
-    const defaultField = defaultSortFieldOptions.value.find(f => f.value === defaultSortField.value)
-    const orderText = defaultSortOrder.value === 'desc' ? '降序' : '升序'
-    parts.push(`默认: ${defaultField?.label}(${orderText})`)
-  }
-  
-  if (enabledSortCount.value > 0) {
-    const enabledFields = formState.value.fields
-      ?.filter(f => f.sortable)
-      .map(f => `${f.title || f.key}(${f.defaultOrder === 'desc' ? '降序' : '升序'})`)
-      .join(', ')
-    parts.push(`可排序: ${enabledFields}`)
-  }
-  
-  return parts.join(' | ') || '无排序规则'
-}
-
-// ==================== 生命周期 ====================
-
-onMounted(() => {
+const handleDragChange = () => {
+  // 拖拽完成后触发配置更新
   emitConfigChange()
-})
+}
+
+// ==================== 配置更新 ====================
+
+const emitConfigChange = () => {
+  emit('config-change', { ...formState.value })
+}
+
+// ==================== 监听配置变化 ====================
 
 watch(
-  () => formState.value,
+  formState,
   () => {
     emitConfigChange()
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.config,
+  (newConfig) => {
+    if (newConfig) {
+      Object.assign(formState.value, newConfig)
+    }
   },
   { deep: true }
 )
@@ -435,230 +207,84 @@ watch(
 
 <style scoped>
 .sort-settings {
-  font-size: 13px;
-  padding: 12px;
+  padding: 20px;
 }
 
-.config-section {
-  margin-bottom: 16px;
+.sort-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  justify-content: space-between;
 }
 
 .section-title {
   font-size: 14px;
   font-weight: 500;
   color: #333;
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #f0f0f0;
 }
 
-.section-header .section-title {
-  margin-bottom: 0;
-  flex: 1;
-}
-
-.help-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #666;
-}
-
-.config-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
-  align-items: center;
-}
-
-.config-grid .n-form-item {
-  margin-bottom: 0;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.help-section {
-  margin-top: 8px;
-  padding: 8px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #18a058;
-}
-
-.help-item {
-  font-size: 12px;
-  line-height: 1.4;
-  margin-bottom: 4px;
-  color: #666;
-}
-
-.help-item:last-child {
-  margin-bottom: 0;
-}
-
-.help-item strong {
-  color: #333;
-}
-
-.batch-actions {
-  padding: 8px 0;
-  border-bottom: 1px solid #e8e8e8;
-  margin-bottom: 12px;
-}
-
-.field-list {
+.sort-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.field-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  background: #f5f5f5;
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.header-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-}
-
-.field-item {
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  background: #fafbfc;
-  padding: 8px;
-  cursor: move;
-  transition: all 0.2s;
-}
-
-.field-item:hover {
-  border-color: #d0d0d0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.field-content {
-  width: 100%;
-}
-
-.field-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.field-left {
+.sort-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  padding: 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  background: #fafafa;
 }
 
 .drag-handle {
-  color: #999;
   cursor: move;
-}
-
-.field-controls {
+  color: #999;
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: flex-end;
 }
 
-.control-item {
-  display: flex;
-  align-items: center;
+.drag-handle:hover {
+  color: #666;
 }
 
 .empty-state {
+  padding: 20px;
   text-align: center;
-  padding: 40px 20px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  background: #fafafa;
 }
 
-:deep(.n-form-item) {
-  margin: 0;
-  padding: 0;
-  min-height: 32px;
-  height: 32px;
-  align-items: center;
-  display: flex;
+.sortable-ghost {
+  opacity: 0.5;
 }
 
-:deep(.n-form-item-label) {
-  font-size: 13px;
-  min-width: 100px !important;
-  width: 100px;
-  white-space: nowrap;
-  line-height: 1.4;
-  padding: 0 12px 0 0;
-  margin: 0;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  color: #333;
-}
-
-:deep(.n-form-item-blank) {
-  min-height: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-:deep(.n-input), :deep(.n-select) {
-  font-size: 13px;
-  min-height: 28px;
-  height: 28px;
+.sortable-chosen {
+  background: #e6f7ff;
 }
 
 @media (max-width: 768px) {
   .sort-settings {
-    padding: 8px;
+    padding: 16px;
   }
   
-  .config-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .sort-item {
+    flex-wrap: wrap;
+    gap: 6px;
   }
   
-  .field-row {
+  .section-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 8px;
-  }
-  
-  .field-controls {
-    justify-content: space-between;
   }
 }
 </style>

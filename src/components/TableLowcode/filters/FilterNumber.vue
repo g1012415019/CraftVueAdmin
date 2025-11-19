@@ -46,7 +46,7 @@ watch(() => props.modelValue, (newValue) => {
 </script>
 
 <style lang="scss" scoped>
-@use '../styles/utilities.scss' as *;
+
 
 .filter-number {
   display: flex;

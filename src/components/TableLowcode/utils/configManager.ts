@@ -16,8 +16,28 @@ export class ConfigManager {
    */
   static getBasicDefaults(): BasicSettingsConfig {
     return {
-      title: '默认视图',
-      description: '',
+      // 行高设置
+      rowHeight: 'medium',
+      
+      // 显示设置
+      showIndex: false,
+      showRecordShortcut: true,
+      showSummaryRow: false,
+      showVerticalLines: true,
+      showAlternateRowColors: true,
+      headerTextWrap: false,
+      
+      // 表格交互方式
+      interactionMode: 'classic',
+      
+      // 更多设置
+      allowInlineEdit: false,
+      
+      // 自动刷新
+      autoRefresh: false,
+      autoRefreshInterval: 60,
+      
+      // 兼容旧配置
       size: 'medium',
       bordered: true,
       striped: false,
@@ -35,8 +55,7 @@ export class ConfigManager {
       pageSizes: [10, 20, 50, 100],
       showSizeChanger: true,
       showQuickJumper: true,
-      showTotal: true,
-      position: 'bottom'
+      showTotal: true
     }
   }
 
@@ -45,11 +64,10 @@ export class ConfigManager {
    */
   static getSortDefaults(): SortConfig {
     return {
-      enabled: true,
+      customFields: [],
       defaultField: '',
       defaultDirection: 'asc',
-      multiSort: false,
-      fields: []
+      multiSort: false
     }
   }
 
@@ -132,6 +150,31 @@ export class ConfigManager {
 
 
 
+
+  /**
+   * 创建默认视图配置
+   * @param viewKey 视图键名
+   * @param viewName 视图名称
+   * @returns 完整的默认视图配置
+   */
+  static createDefaultViewConfig(viewKey: string, viewName: string): any {
+    const view = {
+      key: viewKey,
+      name: viewName
+    }
+    
+    // 使用 initializeViewConfig 初始化配置
+    return this.initializeViewConfig(view)
+  }
+
+  /**
+   * 获取视图的初始配置
+   * @param view 视图对象
+   * @returns 初始配置对象
+   */
+  static getInitialConfig(view: any): any {
+    return view?._initialConfig || null
+  }
 
   /**
    * 批量初始化所有视图配置

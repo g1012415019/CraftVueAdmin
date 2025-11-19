@@ -17,14 +17,12 @@ export interface SortableField extends TableColumn {
 
 /** 排序配置接口 */
 export interface SortConfig {
-  /** 是否启用排序 */
-  enabled?: boolean
+  /** 自定义排序字段列表 */
+  customFields?: SortableField[]
   /** 默认排序字段 */
   defaultField?: string
   /** 默认排序方向 */
   defaultDirection?: 'asc' | 'desc'
-  /** 多列排序配置 */
+  /** 是否支持多列排序 */
   multiSort?: boolean
-  /** 排序字段列表 */
-  fields?: SortableField[]
 }

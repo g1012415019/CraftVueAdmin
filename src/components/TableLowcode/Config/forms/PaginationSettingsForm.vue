@@ -21,23 +21,6 @@
               <n-switch v-model:value="formState.showTotal" size="small" />
             </n-form-item>
             
-            <n-form-item label="大小">
-              <n-button-group size="small">
-                <n-button 
-                  :type="formState.size === 'small' ? 'primary' : 'default'"
-                  @click="formState.size = 'small'"
-                >小</n-button>
-                <n-button 
-                  :type="formState.size === 'medium' ? 'primary' : 'default'"
-                  @click="formState.size = 'medium'"
-                >中</n-button>
-                <n-button 
-                  :type="formState.size === 'large' ? 'primary' : 'default'"
-                  @click="formState.size = 'large'"
-                >大</n-button>
-              </n-button-group>
-            </n-form-item>
-            
             <n-form-item label="每页选项">
               <div class="page-size-options">
                 <n-dynamic-tags 
@@ -72,9 +55,6 @@
           </div>
           <div class="help-item">
             <strong>总数：</strong>控制"共 X 条"文字的显示
-          </div>
-          <div class="help-item">
-            <strong>大小：</strong>控制分页器组件的大小
           </div>
           <div class="help-item">
             <strong>每页选项：</strong>设置每页显示个数的选择器选项
@@ -127,8 +107,6 @@ const emit = defineEmits<{
 const formState = ref<PaginationSettingsConfig>({
   // 使用 ConfigManager 提供的默认值
   ...ConfigManager.getPaginationDefaults(),
-  // 额外的默认配置
-  size: 'medium',
   
   // 合并Props传入的初始配置
   ...props.initialConfig

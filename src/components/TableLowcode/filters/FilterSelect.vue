@@ -64,7 +64,7 @@ watch(() => props.config?.defaultValue, (newValue) => {
 </script>
 
 <style lang="scss" scoped>
-@use '../styles/utilities.scss' as *;
+
 
 .filter-select {
   flex-direction: column;

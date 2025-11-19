@@ -1,340 +1,351 @@
 <template>
   <div class="basic-settings-form">
-    <!-- 表单容器 - 每个BasicSettingsForm实例都有独立的配置状态 -->
-    <n-form 
-      :model="formState" 
-      label-placement="left" 
-      label-width="80px" 
-      size="small"
-    >
+    <n-space direction="vertical" size="large">
       
-      <!-- 基础信息配置区域 -->
-      <div class="config-section">
+      <!-- 行高设置 -->
+      <div class="setting-section">
         <div class="section-header">
-          <h4 class="section-title">基础信息</h4>
-          <n-tooltip trigger="hover">
-            <template #trigger>
-              <n-icon size="16" class="help-icon">
-                <QuestionCircleOutlined />
-              </n-icon>
-            </template>
-            配置表格的基本信息和标识
-          </n-tooltip>
+          <n-text class="section-title">行高设置</n-text>
+          <n-text class="section-subtitle" depth="3">调整表格行的显示高度</n-text>
+        </div>
+        <n-radio-group v-model:value="formState.rowHeight" size="medium" class="radio-group-full">
+          <n-space :wrap="false" justify="space-between">
+            <n-radio value="compact" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">紧凑</div>
+                <div class="label-desc">显示更多内容</div>
+              </div>
+            </n-radio>
+            <n-radio value="medium" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">中等</div>
+                <div class="label-desc">默认推荐</div>
+              </div>
+            </n-radio>
+            <n-radio value="large" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">宽松</div>
+                <div class="label-desc">阅读舒适</div>
+              </div>
+            </n-radio>
+            <n-radio value="extra-large" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">超宽松</div>
+                <div class="label-desc">触屏优化</div>
+              </div>
+            </n-radio>
+          </n-space>
+        </n-radio-group>
+      </div>
+
+      <n-divider class="custom-divider" />
+
+      <!-- 显示选项 -->
+      <div class="setting-section">
+        <div class="section-header">
+          <n-text class="section-title">显示选项</n-text>
+          <n-text class="section-subtitle" depth="3">自定义表格视觉样式</n-text>
+        </div>
+        <div class="checkbox-grid">
+          <n-checkbox v-model:checked="formState.showIndex" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">显示序号</div>
+              <div class="label-desc">左侧显示行号</div>
+            </div>
+          </n-checkbox>
+          <n-checkbox v-model:checked="formState.showRecordShortcut" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">记录快捷方式</div>
+              <div class="label-desc">快速操作入口</div>
+            </div>
+          </n-checkbox>
+          <n-checkbox v-model:checked="formState.showSummaryRow" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">汇总行</div>
+              <div class="label-desc">底部统计信息</div>
+            </div>
+          </n-checkbox>
+          <n-checkbox v-model:checked="formState.showVerticalLines" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">垂直分隔线</div>
+              <div class="label-desc">列间分割线</div>
+            </div>
+          </n-checkbox>
+          <n-checkbox v-model:checked="formState.showAlternateRowColors" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">行交替色</div>
+              <div class="label-desc">斑马纹样式</div>
+            </div>
+          </n-checkbox>
+          <n-checkbox v-model:checked="formState.headerTextWrap" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">标题自动换行</div>
+              <div class="label-desc">长标题处理</div>
+            </div>
+          </n-checkbox>
         </div>
       </div>
 
-      <!-- 外观样式配置区域 -->
-      <div class="config-section">
+      <!-- 交互模式 -->
+      <div class="setting-section">
         <div class="section-header">
-          <h4 class="section-title">外观样式</h4>
-          <n-tooltip trigger="hover">
-            <template #trigger>
-              <n-icon size="16" class="help-icon">
-                <QuestionCircleOutlined />
-              </n-icon>
-            </template>
-            配置表格的视觉样式和布局
-          </n-tooltip>
+          <n-text class="section-title">交互模式</n-text>
+          <n-text class="section-subtitle" depth="3">选择表格操作方式</n-text>
         </div>
-        
-        <!-- 表格尺寸选择 -->
-        <n-form-item label="表格尺寸" path="size">
-          <n-radio-group v-model:value="formState.size">
-            <n-radio value="small">小</n-radio>
-            <n-radio value="medium">中</n-radio>
-            <n-radio value="large">大</n-radio>
-          </n-radio-group>
-        </n-form-item>
-        
-        <!-- 行高密度选择 -->
-        <n-form-item label="行高密度" path="density">
-          <n-button-group size="small">
-            <n-button 
-              v-for="density in densityOptions"
-              :key="density.value"
-              :type="formState.density === density.value ? 'primary' : 'default'"
-              @click="formState.density = density.value"
-            >
-              {{ density.label }}
-            </n-button>
-          </n-button-group>
-        </n-form-item>
-        
-        <!-- 样式开关配置 -->
-        <div class="style-switches">
-          <n-form-item label="显示边框" path="bordered">
-            <n-switch v-model:value="formState.bordered" />
-          </n-form-item>
-          
-          <n-form-item label="斑马纹" path="striped">
-            <n-switch v-model:value="formState.striped" />
-          </n-form-item>
-          
-          <n-form-item label="悬停高亮" path="hoverable">
-            <n-switch v-model:value="formState.hoverable" />
-          </n-form-item>
-        </div>
+        <n-radio-group v-model:value="formState.interactionMode" size="medium" class="radio-group-full">
+          <n-space :wrap="false" justify="space-between">
+            <n-radio value="classic" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">经典模式</div>
+                <div class="label-desc">传统操作</div>
+              </div>
+            </n-radio>
+            <n-radio value="spreadsheet" class="radio-option">
+              <div class="radio-label">
+                <div class="label-main">表格模式</div>
+                <div class="label-desc">类Excel操作</div>
+              </div>
+            </n-radio>
+          </n-space>
+        </n-radio-group>
       </div>
 
-      <!-- 功能配置区域 -->
-      <div class="config-section">
+      <n-divider class="custom-divider" />
+
+      <!-- 功能选项 -->
+      <div class="setting-section">
         <div class="section-header">
-          <h4 class="section-title">功能配置</h4>
+          <n-text class="section-title">功能选项</n-text>
+          <n-text class="section-subtitle" depth="3">高级功能设置</n-text>
         </div>
-        
-        <n-form-item label="加载状态" path="loading">
-          <n-switch v-model:value="formState.loading" />
-        </n-form-item>
-        
-        <n-form-item label="空状态提示" path="emptyText">
-          <n-input 
-            v-model:value="formState.emptyText" 
-            placeholder="暂无数据"
-          />
-        </n-form-item>
+        <n-space direction="vertical" size="medium">
+          <n-checkbox v-model:checked="formState.allowInlineEdit" class="checkbox-option">
+            <div class="checkbox-label">
+              <div class="label-main">启用行内编辑</div>
+              <div class="label-desc">直接双击单元格编辑</div>
+            </div>
+          </n-checkbox>
+          
+          <div class="nested-option">
+            <n-checkbox v-model:checked="formState.autoRefresh" class="checkbox-option">
+              <div class="checkbox-label">
+                <div class="label-main">自动刷新数据</div>
+                <div class="label-desc">定时更新表格内容</div>
+              </div>
+            </n-checkbox>
+            <div v-if="formState.autoRefresh" class="sub-option">
+              <div class="interval-control">
+                <n-text depth="3" class="interval-label">刷新间隔</n-text>
+                <n-input-number 
+                  v-model:value="formState.autoRefreshInterval" 
+                  :min="10" 
+                  :max="3600" 
+                  :step="10"
+                  size="small"
+                  class="interval-input"
+                />
+                <n-text depth="3" class="unit">秒</n-text>
+              </div>
+            </div>
+          </div>
+        </n-space>
       </div>
-    </n-form>
+
+    </n-space>
   </div>
 </template>
 
 <script setup lang="ts">
-/**
- * BasicSettingsForm - 基础设置表单组件
- * 
- * 功能说明：
- * - 每个组件实例都有独立的表单状态，互不干扰
- * - 使用组件内状态管理，避免全局状态污染
- * - 通过事件向父组件传递配置变更
- * - 支持初始配置的注入和默认值设置
- */
-
-import { QuestionCircleOutlined } from '@vicons/antd'
-import type { BasicSettingsConfig } from '../../types/config/basicSettings'
+import { ref, computed, watch } from 'vue'
+import type { BasicSettingsConfig } from '../../types'
 import { ConfigManager } from '../../utils/configManager'
-
-// ==================== 类型定义 ====================
-
-/**
- * 组件Props接口
- */
-interface Props {
-  initialConfig?: Partial<BasicSettingsConfig>  // 初始配置（可选）
-}
 
 // ==================== 组件定义 ====================
 
-/**
- * 定义组件Props，支持传入初始配置
- */
-const props = withDefaults(defineProps<Props>(), {
-  initialConfig: () => ({})
-})
-
-/**
- * 定义组件事件
- * - configChange: 配置变更事件，向父组件传递新的配置
- */
-const emit = defineEmits<{
-  configChange: [config: BasicSettingsConfig]
+const props = defineProps<{
+  config?: BasicSettingsConfig
 }>()
 
-// ==================== 组件内状态 ====================
+const emit = defineEmits<{
+  'config-change': [config: BasicSettingsConfig]
+}>()
 
-/**
- * 密度选项配置
- */
-const densityOptions = [
-  { label: '紧凑', value: 'compact' as const },
-  { label: '默认', value: 'default' as const },
-  { label: '舒适', value: 'comfortable' as const }
-]
+// ==================== 表单状态 ====================
 
-/**
- * 表单状态 - 合并默认配置和传入的初始配置
- */
 const formState = ref<BasicSettingsConfig>({
-  // 使用 ConfigManager 提供的默认值
   ...ConfigManager.getBasicDefaults(),
-  // 额外的默认配置
-  density: 'default',
-  loading: false,
-  emptyText: '暂无数据',
-  
-  // 合并Props传入的初始配置
-  ...props.initialConfig
+  ...props.config
 })
 
+// ==================== 监听配置变化 ====================
 
-// ==================== 工具函数 ====================
-
-/**
- * 发射配置变更事件
- */
-const emitConfigChange = () => {
-  const configCopy = { ...formState.value }
-  emit('configChange', configCopy)
-}
-
-// ==================== 生命周期 ====================
-
-onMounted(() => {
-  // 如果没有初始配置，使用默认值并立即发出
-  if (!props.initialConfig || Object.keys(props.initialConfig).length === 0) {
-    emitConfigChange()
-  } else {
-    // 有初始配置时也发出一次，确保配置同步
-    emitConfigChange()
-  }
-})
-
-/**
- * 统一监听表单状态变化 - 避免重复触发
- */
 watch(
-  () => formState,
-  () => {
-    emitConfigChange()
+  formState,
+  (newConfig) => {
+    emit('config-change', { ...newConfig })
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.config,
+  (newConfig) => {
+    if (newConfig) {
+      Object.assign(formState.value, newConfig)
+    }
   },
   { deep: true }
 )
 </script>
 
-<style lang="scss" scoped>
-/**
- * BasicSettingsForm 组件样式
- * 
- * 设计原则：
- * - 使用scoped样式，确保样式不会影响其他组件实例
- * - 响应式设计，适配不同屏幕尺寸
- * - 清晰的视觉层次和间距
- */
-
+<style scoped>
 .basic-settings-form {
-  padding: 16px;
-  
-  // ==================== 配置区域样式 ====================
-  .config-section {
-    margin-bottom: 24px;
-    
-    &:last-child {
-      margin-bottom: 0;
-    }
-    
-    // 区域头部样式
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #f0f0f0;
-      
-      .section-title {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #262626;
-      }
-      
-      .help-icon {
-        color: #8c8c8c;
-        cursor: help;
-        
-        &:hover {
-          color: #1890ff;
-        }
-      }
-    }
+  padding: 24px;
+  background: #fff;
+}
+
+.setting-section {
+  padding: 0 4px;
+}
+
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.section-subtitle {
+  font-size: 12px;
+}
+
+.custom-divider {
+  margin: 24px 0;
+}
+
+/* 单选框组样式 */
+.radio-group-full {
+  width: 100%;
+}
+
+.radio-option {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.radio-option:last-child {
+  margin-right: 0;
+}
+
+:deep(.n-radio__label) {
+  display: block;
+  width: 100%;
+}
+
+.radio-label,
+.checkbox-label {
+  padding: 4px 0;
+}
+
+.label-main {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.label-desc {
+  font-size: 12px;
+  color: #8a8f8b;
+  line-height: 1.3;
+}
+
+/* 复选框网格布局 */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
+
+.checkbox-option {
+  width: 100%;
+}
+
+/* 嵌套选项样式 */
+.nested-option {
+  padding-left: 8px;
+  border-left: 2px solid #f0f0f0;
+}
+
+.sub-option {
+  margin: 12px 0 8px 24px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.interval-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.interval-label {
+  font-size: 13px;
+  min-width: 60px;
+}
+
+.interval-input {
+  width: 100px;
+}
+
+.unit {
+  font-size: 13px;
+  min-width: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .basic-settings-form {
+    padding: 16px;
   }
   
-  // ==================== 表单项样式 ====================
-  :deep(.n-form-item) {
-    margin-bottom: 16px;
-    
-    .n-form-item-label {
-      font-size: 13px;
-      color: #595959;
-    }
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
-  // ==================== 样式开关区域 ====================
-  .style-switches {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
+  .radio-group-full :deep(.n-space) {
+    flex-direction: column;
+    gap: 8px;
   }
   
-  // ==================== 按钮组样式 ====================
-  :deep(.n-button-group) {
-    .n-button {
-      font-size: 12px;
-      padding: 0 12px;
-      
-      &.n-button--primary-type {
-        background-color: #1890ff;
-        border-color: #1890ff;
-      }
-    }
+  .radio-option {
+    margin-right: 0;
   }
   
-  // ==================== 输入框样式 ====================
-  :deep(.n-input) {
-    font-size: 13px;
-  }
-  
-  :deep(.n-input--textarea) {
-    .n-input__textarea {
-      font-size: 13px;
-      line-height: 1.4;
-    }
-  }
-  
-  // ==================== 单选按钮组样式 ====================
-  :deep(.n-radio-group) {
-    .n-radio {
-      margin-right: 16px;
-      
-      .n-radio__label {
-        font-size: 13px;
-      }
-    }
-  }
-  
-  // ==================== 开关样式 ====================
-  :deep(.n-switch) {
-    &.n-switch--active {
-      .n-switch__rail {
-        background-color: #1890ff;
-      }
-    }
+  .sub-option {
+    margin-left: 16px;
   }
 }
 
-// ==================== 响应式设计 ====================
-@media (max-width: 768px) {
-  .basic-settings-form {
-    padding: 12px;
-    
-    .config-section {
-      margin-bottom: 20px;
-      
-      .section-header {
-        margin-bottom: 12px;
-        
-        .section-title {
-          font-size: 13px;
-        }
-      }
-    }
-    
-    :deep(.n-form-item) {
-      margin-bottom: 12px;
-    }
-  }
+/* 交互效果 */
+.radio-option:hover :deep(.n-radio__dot),
+.checkbox-option:hover :deep(.n-checkbox-box) {
+  border-color: #18a058;
+}
+
+:deep(.n-radio--checked .n-radio__dot) {
+  border-color: #18a058;
+  background-color: #18a058;
+}
+
+:deep(.n-checkbox--checked .n-checkbox-box) {
+  border-color: #18a058;
+  background-color: #18a058;
 }
 </style>

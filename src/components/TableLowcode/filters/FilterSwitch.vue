@@ -45,7 +45,7 @@ watch(() => props.config?.defaultValue, (newValue) => {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/utilities.scss";
+
 
 .filter-switch {
   display: flex;

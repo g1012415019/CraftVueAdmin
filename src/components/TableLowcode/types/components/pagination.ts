@@ -22,8 +22,4 @@ export interface PaginationConfig {
   showQuickJumper?: boolean
   /** 是否显示总数信息 */
   showTotal?: boolean
-  /** 分页器显示位置 */
-  position?: 'top' | 'bottom' | 'both'
-  /** 分页器尺寸大小 */
-  size?: 'small' | 'medium' | 'large'
 }
