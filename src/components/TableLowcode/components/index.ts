@@ -1,6 +1,4 @@
-export { default as ViewManager } from './ViewManager/index.vue'
-export { default as FilterSection } from './FilterSection.vue'
-export { default as ActionBar } from './ActionBar.vue'
-export { default as ViewBar } from './ViewBar.vue'
-export { default as TableSection } from './TableSection.vue'
-export { default as PaginationBar } from './PaginationBar.vue'
+// 组件导出文件
+// 注意: 这个文件主要用于类型声明，实际导入请直接使用具体路径
+
+export {}  // 确保这是一个模块

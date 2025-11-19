@@ -44,7 +44,9 @@ watch(() => props.config?.defaultValue, (newValue) => {
 }, { immediate: true })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "../styles/utilities.scss";
+
 .filter-switch {
   display: flex;
   align-items: center;

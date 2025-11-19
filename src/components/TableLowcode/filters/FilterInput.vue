@@ -160,25 +160,101 @@ watch([exactMatch, caseSensitive], () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../styles/utilities.scss' as *;
+
 .filter-input {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
-  width: 300px;
-}
-
-.filter-label {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  min-width: 60px;
-  text-align: right;
-}
-
-.input-suffix {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  
+  .filter-label {
+    font-size: 12px; color: #666; margin-bottom: 4px;
+  }
+  
+  .input-container {
+    position: relative;
+    
+    .main-input {
+      width: 160px;
+    }
+    
+    .advanced-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: all 0.3s ease;
+      
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+  
+  .advanced-panel {
+    margin-top: $spacing-sm;
+    padding: $spacing-md;
+    background: white;
+    border: 1px solid $color-border;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .condition-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      
+      .operator-select {
+        width: 120px;
+      }
+      
+      .value-input {
+        flex: 1;
+      }
+      
+      .remove-btn {
+        transition: all 0.3s ease;
+        
+        &:hover {
+          color: $color-error;
+        }
+      }
+    }
+    
+    .add-condition {
+      width: 100%;
+      border-style: dashed;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        border-color: $color-primary;
+        color: $color-primary;
+      }
+    }
+  }
+  
+  .keywords-modal {
+    .keywords-input {
+      margin-bottom: 12px;
+    }
+    
+    .keywords-preview {
+      padding: $spacing-sm;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+      color: $color-text-secondary;
+      
+      .keyword-tag {
+        display: inline-block;
+        padding: 2px 6px;
+        margin: 2px;
+        background: $color-primary;
+        color: white;
+        border-radius: 3px;
+        font-size: 11px;
+      }
+    }
+  }
 }
 </style>

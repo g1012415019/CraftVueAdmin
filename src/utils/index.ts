@@ -128,7 +128,7 @@ export function getChildrenRouter(routerMap: Array<any>) {
 export function isRootRouter(item) {
   return (
     item.meta?.alwaysShow != true &&
-    item?.children?.filter((item) => !Boolean(item?.meta?.hidden))?.length === 1
+    item?.children?.filter((item) => !item?.meta?.hidden)?.length === 1
   );
 }
 

@@ -13,46 +13,54 @@
         </div>
         <div class="config-grid">
           <n-form-item label="启用">
-            <n-switch v-model:value="config.pagination.enabled" size="small" />
+            <n-switch v-model:value="formState.enabled" size="small" />
           </n-form-item>
           
-          <template v-if="config.pagination.enabled">
+          <template v-if="formState.enabled">
             <n-form-item label="总数">
-              <n-switch v-model:value="config.pagination.showTotal" size="small" />
+              <n-switch v-model:value="formState.showTotal" size="small" />
             </n-form-item>
             
             <n-form-item label="大小">
               <n-button-group size="small">
                 <n-button 
-                  :type="config.pagination.size === 'small' ? 'primary' : 'default'"
-                  @click="config.pagination.size = 'small'"
+                  :type="formState.size === 'small' ? 'primary' : 'default'"
+                  @click="formState.size = 'small'"
                 >小</n-button>
                 <n-button 
-                  :type="config.pagination.size === 'medium' ? 'primary' : 'default'"
-                  @click="config.pagination.size = 'medium'"
+                  :type="formState.size === 'medium' ? 'primary' : 'default'"
+                  @click="formState.size = 'medium'"
                 >中</n-button>
                 <n-button 
-                  :type="config.pagination.size === 'large' ? 'primary' : 'default'"
-                  @click="config.pagination.size = 'large'"
+                  :type="formState.size === 'large' ? 'primary' : 'default'"
+                  @click="formState.size = 'large'"
                 >大</n-button>
               </n-button-group>
             </n-form-item>
             
             <n-form-item label="每页选项">
-              <n-dynamic-tags 
-                v-model:value="config.pagination.pageSizeOptions" 
-                :max="6"
-                size="small"
-                type="primary"
-              />
+              <div class="page-size-options">
+                <n-dynamic-tags 
+                  v-model:value="pageSizeStrings" 
+                  :max="6"
+                  size="small"
+                  type="primary"
+                />
+                <div class="page-size-help">
+                  <n-text depth="3" style="font-size: 11px;">
+                    输入数字后按回车添加选项，点击标签删除
+                  </n-text>
+                </div>
+              </div>
             </n-form-item>
             
             <n-form-item label="默认每页">
               <n-select
-                v-model:value="config.pagination.defaultPageSize"
-                :options="pageSizeSelectOptions"
+                v-model:value="formState.defaultPageSize"
+                :options="defaultPageSizeOptions"
                 size="small"
-                style="width: 100px"
+                style="width: 120px;"
+                placeholder="选择默认每页数量"
               />
             </n-form-item>
           </template>
@@ -80,42 +88,149 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { inject, ref, watch, computed } from 'vue';
+<script lang="ts" setup>
+import { ref, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
+import type { PaginationSettingsConfig } from '../../types/config/paginationSettings'
+import { ConfigManager } from '../../utils/configManager'
 
-const config = inject('tableConfig') as Ref<any>;
+// ==================== 类型定义 ====================
 
-// 帮助显示控制
-const showHelp = ref(false);
+/**
+ * 组件Props接口
+ */
+interface Props {
+  initialConfig?: Partial<PaginationSettingsConfig>  // 初始配置（可选）
+}
 
-// 计算每页选项的下拉选项
-const pageSizeSelectOptions = computed(() => {
-  return (config.value.pagination.pageSizeOptions || []).map(item => ({
-    label: item,
-    value: parseInt(item)
-  }));
-});
+// ==================== 组件定义 ====================
 
-// 初始化配置对象结构
-const initConfig = () => {
-  if (!config.value.pagination) config.value.pagination = {};
+/**
+ * 定义组件Props，支持传入初始配置
+ */
+const props = withDefaults(defineProps<Props>(), {
+  initialConfig: () => ({})
+})
+
+/**
+ * 定义组件事件
+ * - configChange: 配置变更事件，向父组件传递新的配置
+ */
+const emit = defineEmits<{
+  configChange: [config: PaginationSettingsConfig]
+}>()
+
+// ==================== 组件内状态 ====================
+
+/**
+ * 表单状态 - 合并默认配置和传入的初始配置
+ */
+const formState = ref<PaginationSettingsConfig>({
+  // 使用 ConfigManager 提供的默认值
+  ...ConfigManager.getPaginationDefaults(),
+  // 额外的默认配置
+  size: 'medium',
   
-  // 设置默认值 - 与 PaginationBar.vue 对应
-  if (config.value.pagination.enabled === undefined) config.value.pagination.enabled = true;
-  if (config.value.pagination.showTotal === undefined) config.value.pagination.showTotal = true;
-  if (config.value.pagination.size === undefined) config.value.pagination.size = 'small';
-  if (config.value.pagination.showQuickJumper === undefined) config.value.pagination.showQuickJumper = false;
-  if (config.value.pagination.showSizeChanger === undefined) config.value.pagination.showSizeChanger = false;
-  if (config.value.pagination.pageSizeOptions === undefined) config.value.pagination.pageSizeOptions = ['10', '20', '50', '100'];
-  if (!Array.isArray(config.value.pagination.pageSizeOptions)) config.value.pagination.pageSizeOptions = ['10', '20', '50', '100'];
-  if (config.value.pagination.defaultPageSize === undefined) config.value.pagination.defaultPageSize = 20;
-};
+  // 合并Props传入的初始配置
+  ...props.initialConfig
+})
 
-// 初始化配置
-initConfig();
+/**
+ * 帮助信息显示状态
+ */
+const showHelp = ref(false)
 
-// 监听配置变化
-watch(() => config.value, initConfig, { deep: true });
+// ==================== 计算属性 ====================
+
+/**
+ * 每页选项的字符串数组 - 用于 n-dynamic-tags 组件
+ */
+const pageSizeStrings = computed({
+  get: () => {
+    const options = formState.value.pageSizeOptions || []
+    return options.map(size => size.toString())
+  },
+  set: (value: string[]) => {
+    const numbers = value
+      .map(str => parseInt(str))
+      .filter(num => !isNaN(num) && num > 0)
+      .sort((a, b) => a - b)
+    formState.value.pageSizeOptions = numbers
+  }
+})
+
+/**
+ * 默认每页数量选项 - 基于当前的每页选项生成
+ */
+const defaultPageSizeOptions = computed(() => {
+  const options = formState.value.pageSizeOptions || []
+  return options.map(size => ({
+    label: `${size} 条/页`,
+    value: size
+  }))
+})
+
+// ==================== 常量定义 ====================
+
+
+// ==================== 工具函数 ====================
+
+/**
+ * 发射配置变更事件
+ */
+const emitConfigChange = () => {
+  const configCopy = { ...formState.value }
+  emit('configChange', configCopy)
+}
+
+// ==================== 生命周期 ====================
+
+onMounted(() => {
+  // 确保默认每页值在选项中
+  ensureDefaultPageSizeInOptions()
+  emitConfigChange()
+})
+
+/**
+ * 统一监听表单状态变化 - 避免重复触发
+ */
+watch(
+  () => formState.value,
+  () => {
+    emitConfigChange()
+  },
+  { deep: true }
+)
+
+/**
+ * 监听每页选项变化，确保默认值始终在选项中
+ */
+watch(
+  () => formState.value.pageSizeOptions,
+  (newOptions) => {
+    if (newOptions && newOptions.length > 0) {
+      // 如果当前默认值不在选项中，设置为第一个选项
+      if (!newOptions.includes(formState.value.defaultPageSize as number)) {
+        formState.value.defaultPageSize = newOptions[0]
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// ==================== 辅助函数 ====================
+
+/**
+ * 确保默认每页值在选项中
+ */
+const ensureDefaultPageSizeInOptions = () => {
+  if (!formState.value.pageSizeOptions || formState.value.pageSizeOptions.length === 0) {
+    formState.value.pageSizeOptions = [10, 20, 50, 100]
+  }
+  
+  if (!formState.value.pageSizeOptions.includes(formState.value.defaultPageSize as number)) {
+    formState.value.defaultPageSize = formState.value.pageSizeOptions[0]
+  }
+}
 </script>
 
 <style scoped>
@@ -152,8 +267,17 @@ watch(() => config.value, initConfig, { deep: true });
 
 .config-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  align-items: start;
+}
+
+.page-size-options {
   grid-template-columns: 1fr;
   gap: 8px;
+  .page-size-help {
+    margin-top: 4px;
+  }
 }
 
 .config-grid :deep(.n-form-item) {

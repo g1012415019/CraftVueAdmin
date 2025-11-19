@@ -13,7 +13,7 @@
             <span style="font-size: 12px; color: #666; width: 80px; flex-shrink: 0; padding-top: 6px;">选择字段</span>
             <div style="flex: 1; width: 0;">
               <n-select
-                v-model:value="selectedFields"
+                :value="selectedFieldKeys"
                 multiple
                 :options="fieldOptions"
                 placeholder="选择要显示筛选的字段"
@@ -22,6 +22,7 @@
                 max-tag-count="responsive"
                 filterable
                 :show-checkmark="false"
+                @update:value="updateSelectedFields"
               >
                 <template #empty>
                   <div style="padding: 12px; text-align: center;">
@@ -35,7 +36,7 @@
       </n-card>
 
       <!-- 已选择的筛选字段 -->
-      <n-card v-if="selectedFields.length > 0" size="small" class="mb-1">
+      <n-card v-if="formState.filters && formState.filters.length > 0" size="small" class="mb-1">
         <template #header>
           <div style="display: flex; align-items: center; justify-content: between; width: 100%;">
             <span>筛选字段配置</span>
@@ -68,27 +69,16 @@
               <div style="margin-bottom: 6px;">• <strong>拖拽排序</strong>：按住拖拽图标可调整字段顺序</div>
               <div style="margin-bottom: 6px;">• <strong>批量操作</strong>：勾选字段后可批量设置类型和位置</div>
               <div style="margin-bottom: 12px;">• <strong>编辑配置</strong>：点击编辑按钮可详细配置字段属性</div>
-              
-              <div style="font-weight: 600; margin-bottom: 8px;">🏷️ 标签说明</div>
-              <div style="margin-bottom: 6px;">• <n-tag size="small" type="default">文本</n-tag> 筛选器类型（文本框、下拉选择等）</div>
-              <div style="margin-bottom: 6px;">• <n-tag size="small" type="info">基础</n-tag> 显示在表格上方的筛选栏中</div>
-              <div style="margin-bottom: 12px;">• <n-tag size="small" type="warning">高级</n-tag> 显示在高级筛选抽屉中，可与基础共存</div>
-              
-              <div style="font-weight: 600; margin-bottom: 8px;">⚡ 筛选类型</div>
-              <div style="margin-bottom: 4px;">• <strong>文本框</strong>：支持精准匹配、大小写敏感、多关键词搜索</div>
-              <div style="margin-bottom: 4px;">• <strong>数字输入</strong>：数值范围筛选</div>
-              <div style="margin-bottom: 4px;">• <strong>日期选择</strong>：单个日期或日期范围筛选</div>
-              <div style="margin-bottom: 4px;">• <strong>下拉选择</strong>：预设选项，支持单选或多选</div>
-              <div>• <strong>复选/单选/开关</strong>：快速状态筛选</div>
             </div>
           </n-alert>
         </n-collapse-transition>
+        
         <!-- 批量操作 -->
         <div class="batch-actions">
           <n-space size="small" align="center">
             <n-checkbox 
-              :checked="selectedKeys.length === selectedFieldsConfig.length && selectedFieldsConfig.length > 0"
-              :indeterminate="selectedKeys.length > 0 && selectedKeys.length < selectedFieldsConfig.length"
+              :checked="selectedKeys.length === formState.filters.length && formState.filters.length > 0"
+              :indeterminate="selectedKeys.length > 0 && selectedKeys.length < formState.filters.length"
               @update:checked="handleSelectAll"
             >
               全选
@@ -98,12 +88,6 @@
               <n-text depth="3" style="font-size: 12px;">
                 已选择 {{ selectedKeys.length }} 项
               </n-text>
-              <n-button size="tiny" @click="batchSetAdvanced(true)">
-                设为高级筛选
-              </n-button>
-              <n-button size="tiny" @click="batchSetAdvanced(false)">
-                设为基础筛选
-              </n-button>
               <n-select
                 v-model:value="batchFilterType"
                 size="tiny"
@@ -128,7 +112,7 @@
         
         <div class="filter-list">
           <div 
-            v-for="(field, index) in selectedFieldsConfig" 
+            v-for="(field, index) in formState.filters" 
             :key="field.key"
             class="filter-field-item"
             draggable="true"
@@ -136,10 +120,7 @@
             @dragover.prevent
             @drop="handleDrop(index)"
           >
-            <div 
-              class="field-content"
-              @click="toggleEdit(field.key)"
-            >
+            <div class="field-content">
               <div class="field-header">
                 <div class="field-left">
                   <n-checkbox 
@@ -175,22 +156,7 @@
                     type="default"
                     style="margin-left: 6px;"
                   >
-                    {{ getFilterTypeLabel(field.filterType) }}
-                  </n-tag>
-                  <n-tag 
-                    size="small" 
-                    type="info"
-                    style="margin-left: 4px;"
-                  >
-                    基础
-                  </n-tag>
-                  <n-tag 
-                    v-if="field.advancedFilter" 
-                    size="small" 
-                    type="warning"
-                    style="margin-left: 4px;"
-                  >
-                    高级
+                    {{ getFilterTypeLabel(field.type) }}
                   </n-tag>
                 </div>
                 <div class="field-actions">
@@ -237,42 +203,8 @@
                     <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
                       <span style="font-size: 12px; color: #666; width: 60px;">筛选类型</span>
                       <n-select
-                        v-model:value="field.filterType"
+                        v-model:value="field.type"
                         :options="filterTypeOptions"
-                        size="small"
-                        style="flex: 1;"
-                      />
-                    </div>
-                  </div>
-                  <div v-if="!['input', 'number', 'date', 'switch'].includes(field.filterType)">
-                    <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
-                      <span style="font-size: 12px; color: #666; width: 60px;">允许多选</span>
-                      <n-switch v-model:value="field.allowMultiple" size="small" />
-                    </div>
-                  </div>
-                  <div>
-                    <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
-                      <span style="font-size: 12px; color: #666; width: 60px;">默认值</span>
-                      <n-input 
-                        v-model:value="field.defaultValue" 
-                        placeholder="设置默认筛选值"
-                        size="small"
-                        style="flex: 1;"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
-                      <span style="font-size: 12px; color: #666; width: 60px;">高级筛选</span>
-                      <n-switch v-model:value="field.advancedFilter" size="small" />
-                    </div>
-                  </div>
-                  <div v-if="['input', 'number'].includes(field.filterType)" style="grid-column: 1 / -1;">
-                    <div style="display: flex; align-items: center; height: 24px; margin-bottom: 2px;">
-                      <span style="font-size: 12px; color: #666; width: 60px;">占位符</span>
-                      <n-input 
-                        v-model:value="field.placeholder" 
-                        placeholder="请输入提示文字"
                         size="small"
                         style="flex: 1;"
                       />
@@ -285,179 +217,49 @@
         </div>
       </n-card>
 
-      <!-- 预览效果 -->
-      <n-card v-if="selectedFields.length > 0" title="预览效果" size="small" class="mb-1">
-        
-        <n-alert v-if="showPreviewTip" type="success" :show-icon="false" closable @close="showPreviewTip = false">
-          <div style="line-height: 1.6;">
-            <div style="margin-bottom: 12px;">
-              <strong>当前配置：</strong>包含 {{ selectedFields.length }} 个筛选字段：
-              {{ selectedFieldsConfig.map(f => f.label).join('、') }}
-            </div>
-            <div style="font-size: 12px; color: #666;">
-              💡 提示：基础筛选显示在表格上方，高级筛选可通过"高级筛选"按钮打开抽屉操作
-            </div>
-          </div>
-        </n-alert>
-      </n-card>
-
     </n-form>
   </div>
 </template>
 
-<script setup lang="tsx">
-import { ref, computed, watch, inject } from 'vue';
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
+import type { FilterListConfig } from '../../types/components/filterSection'
+import type { TableColumn } from '../../types/table/column'
+import { debounce } from '../../utils/debounce'
+import { ConfigManager } from '../../utils/configManager'
 
-// 注入配置
-const config = inject('tableConfig') as any
+// ==================== 类型定义 ====================
 
-// 启用筛选列表
-const enableFilterList = ref(false);
+interface Props {
+  initialConfig?: Partial<FilterListConfig>
+  columns?: TableColumn[]
+}
 
-// 显示帮助面板
-const showHelp = ref(false);
+// ==================== 组件定义 ====================
+
+const props = withDefaults(defineProps<Props>(), {
+  initialConfig: () => ({}),
+  columns: () => []
+})
+
+const emit = defineEmits<{
+  configChange: [config: FilterListConfig]
+}>()
+
+// ==================== 组件内状态 ====================
+
+const formState = ref<FilterListConfig>({
+  // 使用 ConfigManager 提供的默认值
+  ...ConfigManager.getFilterListDefaults(),
+  
+  // 合并Props传入的初始配置
+  ...props.initialConfig
+})
 
 // 显示各种提示
-const showInfoTip = ref(true);
-const showHelpTip = ref(true);
-const showPreviewTip = ref(true);
-
-// 选中的字段
-const selectedFields = ref<string[]>([]);
-
-// 可选字段选项
-const fieldOptions = [
-  { label: '姓名', value: 'name' },
-  { label: '状态', value: 'status' },
-  { label: '类型', value: 'type' },
-  { label: '部门', value: 'department' },
-  { label: '创建人', value: 'creator' },
-  { label: '优先级', value: 'priority' },
-  { label: '标签', value: 'tags' },
-  { label: '地区', value: 'region' },
-  { label: '分类', value: 'category' },
-  { label: '年龄', value: 'age' },
-  { label: '性别', value: 'gender' },
-  { label: '职位', value: 'position' },
-  { label: '薪资', value: 'salary' },
-  { label: '入职时间', value: 'joinDate' },
-  { label: '工作经验', value: 'experience' },
-  { label: '技能', value: 'skills' },
-  { label: '学历', value: 'education' },
-  { label: '联系电话', value: 'phone' },
-  { label: '邮箱', value: 'email' },
-  { label: '地址', value: 'address' }
-];
-
-// 筛选类型选项
-const filterTypeOptions = [
-  { label: '文本框', value: 'input' },
-  { label: '数字输入', value: 'number' },
-  { label: '日期选择', value: 'date' },
-  { label: '日期范围', value: 'daterange' },
-  { label: '下拉选择', value: 'select' },
-  { label: '复选框', value: 'checkbox' },
-  { label: '单选按钮', value: 'radio' },
-  { label: '开关', value: 'switch' }
-];
-
-// 显示位置选项
-const positionOptions = [
-  { label: '表格顶部', value: 'top' },
-  { label: '左侧边栏', value: 'left' },
-  { label: '右侧边栏', value: 'right' },
-];
-
-// 选中字段的配置
-const selectedFieldsConfig = ref<Array<{
-  key: string;
-  label: string;
-  filterType: string;
-  position: string;
-  sortOrder: number;
-  defaultExpanded: boolean;
-  allowMultiple: boolean;
-  advancedFilter: boolean;
-  defaultValue: string;
-  placeholder: string;
-  required: boolean;
-  realTimeFilter: boolean;
-}>>([]);
-
-// 监听 config 变化，初始化配置
-watch(() => config?.value, (newConfig) => {
-  console.log('FilterListSettingsForm config 变化:', newConfig)
-  
-  if (newConfig?.filters) {
-    // 直接使用当前视图的筛选配置
-    selectedFieldsConfig.value = newConfig.filters.map(filter => ({
-      key: filter.key,
-      label: filter.label,
-      filterType: filter.filterType || 'input',
-      show: filter.show !== false,
-      position: 'top',
-      sortOrder: 1,
-      defaultExpanded: true,
-      allowMultiple: false,
-      advancedFilter: false
-    }))
-    
-    selectedFields.value = selectedFieldsConfig.value
-      .filter(f => f.show)
-      .map(f => f.key)
-      
-    console.log('筛选字段配置:', selectedFieldsConfig.value)
-    console.log('选中字段:', selectedFields.value)
-  } else {
-    selectedFieldsConfig.value = []
-    selectedFields.value = []
-  }
-}, { immediate: true })
-
-// 监听选中字段变化
-watch(selectedFields, (newFields) => {
-  // 添加新字段配置
-  newFields.forEach(fieldKey => {
-    if (!selectedFieldsConfig.value.find(f => f.key === fieldKey)) {
-      const fieldOption = fieldOptions.find(f => f.value === fieldKey);
-      selectedFieldsConfig.value.push({
-        key: fieldKey,
-        label: fieldOption?.label || fieldKey,
-        filterType: 'input', // 默认为文本框
-        position: 'top',
-        sortOrder: selectedFieldsConfig.value.length + 1,
-        defaultExpanded: true,
-        allowMultiple: false,
-        advancedFilter: false,
-        defaultValue: '',
-        placeholder: '',
-        required: false,
-        realTimeFilter: false
-      });
-    }
-  });
-
-  // 移除不再选中的字段配置
-  selectedFieldsConfig.value = selectedFieldsConfig.value.filter(f => 
-    newFields.includes(f.key)
-  );
-}, { deep: true })
-
-// 监听配置变化，更新到全局配置
-watch([selectedFieldsConfig], () => {
-  if (config?.value) {
-    if (!config.value.filters) {
-      config.value.filters = {}
-    }
-    config.value.filters.enableFilterList = selectedFields.value.length > 0
-    config.value.filters.selectedFieldsConfig = selectedFieldsConfig.value
-  }
-}, { deep: true, immediate: true })
-
-// 移除字段
-const removeField = (fieldKey: string) => {
-  selectedFields.value = selectedFields.value.filter(key => key !== fieldKey);
-};
+const showInfoTip = ref(true)
+const showHelpTip = ref(true)
+const showHelp = ref(false)
 
 // 编辑状态
 const editingField = ref<string | null>(null)
@@ -465,9 +267,63 @@ const editingLabel = ref<string | null>(null)
 
 // 批量选择
 const selectedKeys = ref<string[]>([])
-
-// 批量操作
 const batchFilterType = ref<string | null>(null)
+
+// ==================== 计算属性 ====================
+
+const fieldOptions = computed(() => {
+  return props.columns.map(col => ({
+    label: col.title || col.key,
+    value: col.key
+  }))
+})
+
+const selectedFieldKeys = computed(() => {
+  return formState.value.filters?.map(f => f.key) || []
+})
+
+// ==================== 常量定义 ====================
+
+const filterTypeOptions = [
+  { label: '文本框', value: 'input' },
+  { label: '下拉选择', value: 'select' },
+  { label: '日期选择', value: 'date' },
+  { label: '日期范围', value: 'daterange' },
+  { label: '数字输入', value: 'number' }
+]
+
+// ==================== 工具函数 ====================
+
+const emitConfigChange = debounce(() => {
+  const configCopy = { ...formState.value }
+  emit('configChange', configCopy)
+}, 300)
+
+const updateSelectedFields = (fieldKeys: string[]) => {
+  const newFilters = fieldKeys.map(fieldKey => {
+    const existingFilter = formState.value.filters?.find(f => f.key === fieldKey)
+    const field = props.columns.find(col => col.key === fieldKey)
+    
+    return existingFilter || {
+      field: fieldKey,
+      label: field?.title || fieldKey,
+      type: 'input' as const,
+      position: "basic" ,
+      options: []
+    }
+  })
+  
+  formState.value.filters = newFilters
+}
+
+const removeField = (fieldKey: string) => {
+  if (!formState.value.filters) return
+  
+  const index = formState.value.filters.findIndex(f => f.key === fieldKey)
+  if (index >= 0) {
+    formState.value.filters.splice(index, 1)
+  }
+}
 
 // 处理单个字段选择
 const handleSelectField = (key: string, checked: boolean) => {
@@ -486,19 +342,10 @@ const handleSelectField = (key: string, checked: boolean) => {
 // 处理全选
 const handleSelectAll = (checked: boolean) => {
   if (checked) {
-    selectedKeys.value = selectedFieldsConfig.value.map(f => f.key)
+    selectedKeys.value = formState.value.filters?.map(f => f.key) || []
   } else {
     selectedKeys.value = []
   }
-}
-
-// 批量设置高级筛选
-const batchSetAdvanced = (isAdvanced: boolean) => {
-  selectedFieldsConfig.value.forEach(field => {
-    if (selectedKeys.value.includes(field.key)) {
-      field.advancedFilter = isAdvanced
-    }
-  })
 }
 
 // 批量删除
@@ -526,10 +373,10 @@ const getFilterTypeLabel = (filterType: string) => {
 
 // 批量设置筛选类型
 const batchSetFilterType = (filterType: string) => {
-  if (filterType) {
-    selectedFieldsConfig.value.forEach(field => {
+  if (filterType && formState.value.filters) {
+    formState.value.filters.forEach(field => {
       if (selectedKeys.value.includes(field.key)) {
-        field.filterType = filterType
+        field.type = filterType as any
       }
     })
     batchFilterType.value = null
@@ -549,14 +396,28 @@ const handleDragStart = (index: number) => {
 }
 
 const handleDrop = (dropIndex: number) => {
-  if (draggedIndex === -1 || draggedIndex === dropIndex) return
+  if (draggedIndex === -1 || draggedIndex === dropIndex || !formState.value.filters) return
   
-  const draggedItem = selectedFieldsConfig.value[draggedIndex]
-  selectedFieldsConfig.value.splice(draggedIndex, 1)
-  selectedFieldsConfig.value.splice(dropIndex, 0, draggedItem)
+  const draggedItem = formState.value.filters[draggedIndex]
+  formState.value.filters.splice(draggedIndex, 1)
+  formState.value.filters.splice(dropIndex, 0, draggedItem)
   
   draggedIndex = -1
 }
+
+// ==================== 生命周期 ====================
+
+onMounted(() => {
+  emitConfigChange()
+})
+
+watch(
+  () => formState.value,
+  () => {
+    emitConfigChange()
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
@@ -620,7 +481,7 @@ const handleDrop = (dropIndex: number) => {
   transition: opacity 0.2s;
 }
 
-.field-item:hover .field-actions {
+.filter-field-item:hover .field-actions {
   opacity: 1;
 }
 
@@ -632,12 +493,5 @@ const handleDrop = (dropIndex: number) => {
   padding-top: 6px;
   border-top: 1px solid #e8e8e8;
   margin-top: 6px;
-}
-
-.description {
-  font-size: 11px;
-  color: #999;
-  display: block;
-  margin-top: 4px;
 }
 </style>

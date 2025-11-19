@@ -1,0 +1,420 @@
+/**
+ * TableLowcode 通用工具样式 (SCSS)
+ * 使用SCSS特性提升维护性和开发效率
+ */
+
+// ==================== SCSS 变量定义 ====================
+// 宽度变量
+$input-width-xs: 80px;
+$input-width-sm: 100px;
+$input-width-md: 120px;
+$input-width-lg: 140px;
+$input-width-xl: 200px;
+$input-width-2xl: 400px;
+
+// 间距变量
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 16px;
+$spacing-xl: 20px;
+$spacing-2xl: 24px;
+$spacing-3xl: 32px;
+
+// 字体大小变量
+$text-xs: 11px;
+$text-sm: 12px;
+$text-base: 13px;
+$text-lg: 14px;
+$text-xl: 16px;
+
+// 颜色变量
+$color-primary: #1890ff;
+$color-success: #52c41a;
+$color-warning: #faad14;
+$color-error: #ff4d4f;
+$color-text-primary: #262626;
+$color-text-secondary: #595959;
+$color-text-muted: #8c8c8c;
+$color-border: #f0f0f0;
+$color-bg-light: #f5f5f5;
+
+// 断点变量
+$breakpoint-mobile: 480px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1200px;
+
+// ==================== SCSS 混入 (Mixins) ====================
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin input-base {
+  border-radius: 4px;
+  border: 1px solid $color-border;
+  transition: border-color 0.2s ease;
+  
+  &:hover {
+    border-color: $color-primary;
+  }
+  
+  &:focus {
+    border-color: $color-primary;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.1);
+  }
+}
+
+@mixin button-base {
+  border-radius: 4px;
+  border: 1px solid $color-border;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary;
+  }
+}
+
+// ==================== 宽度工具类生成 ====================
+$widths: (80, 100, 120, 140, 200, 300, 400, 500, 600);
+
+@each $width in $widths {
+  .w-#{$width} {
+    width: #{$width}px;
+  }
+  
+  .min-w-#{$width} {
+    min-width: #{$width}px;
+  }
+}
+
+// ==================== 间距工具类生成 ====================
+$spacings: (4, 8, 12, 16, 20, 24, 32);
+
+@each $spacing in $spacings {
+  // Margin
+  .m-#{$spacing} { margin: #{$spacing}px; }
+  .mt-#{$spacing} { margin-top: #{$spacing}px; }
+  .mb-#{$spacing} { margin-bottom: #{$spacing}px; }
+  .ml-#{$spacing} { margin-left: #{$spacing}px; }
+  .mr-#{$spacing} { margin-right: #{$spacing}px; }
+  
+  // Padding
+  .p-#{$spacing} { padding: #{$spacing}px; }
+  .pt-#{$spacing} { padding-top: #{$spacing}px; }
+  .pb-#{$spacing} { padding-bottom: #{$spacing}px; }
+  .pl-#{$spacing} { padding-left: #{$spacing}px; }
+  .pr-#{$spacing} { padding-right: #{$spacing}px; }
+  
+  // Gap
+  .gap-#{$spacing} { gap: #{$spacing}px; }
+}
+
+// ==================== 字体大小工具类 ====================
+.text-xs { font-size: $text-xs; }
+.text-sm { font-size: $text-sm; }
+.text-base { font-size: $text-base; }
+.text-lg { font-size: $text-lg; }
+.text-xl { font-size: $text-xl; }
+
+// ==================== 组件特定工具类 ====================
+// 输入框尺寸
+.input {
+  &-xs { width: $input-width-xs; }
+  &-sm { width: $input-width-sm; }
+  &-md { width: $input-width-md; }
+  &-lg { width: $input-width-lg; }
+  &-xl { width: $input-width-xl; }
+  &-2xl { width: $input-width-2xl; }
+  
+  &-full { width: 100%; }
+}
+
+// 选择器尺寸
+.select {
+  &-xs { min-width: $input-width-xs; }
+  &-sm { min-width: $input-width-sm; }
+  &-md { min-width: $input-width-md; }
+  &-lg { min-width: $input-width-lg; }
+  &-xl { min-width: $input-width-xl; }
+}
+
+// 模态框尺寸
+.modal {
+  &-sm { width: 300px; }
+  &-md { width: 400px; }
+  &-lg { width: 600px; }
+  &-xl { width: 800px; }
+}
+
+// ==================== 布局工具类 ====================
+.flex {
+  display: flex;
+  
+  &-col { flex-direction: column; }
+  &-row { flex-direction: row; }
+  &-wrap { flex-wrap: wrap; }
+  &-nowrap { flex-wrap: nowrap; }
+}
+
+.items {
+  &-start { align-items: flex-start; }
+  &-center { align-items: center; }
+  &-end { align-items: flex-end; }
+  &-stretch { align-items: stretch; }
+}
+
+.justify {
+  &-start { justify-content: flex-start; }
+  &-center { justify-content: center; }
+  &-end { justify-content: flex-end; }
+  &-between { justify-content: space-between; }
+  &-around { justify-content: space-around; }
+}
+
+// ==================== 表格特定工具类 ====================
+.table {
+  // 列宽度
+  &-col {
+    &-icon { width: 24px; }
+    &-checkbox { width: 20px; }
+    &-name { width: 120px; }
+    &-type { width: 80px; }
+    &-direction { width: 100px; }
+    &-status { width: 40px; }
+  }
+  
+  // 字段区域
+  &-field {
+    &-header {
+      @include flex-between;
+      gap: $spacing-sm;
+      margin-top: $spacing-sm;
+      padding-bottom: $spacing-sm;
+      border-bottom: 1px solid $color-border;
+    }
+    
+    &-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm 0;
+      border-bottom: 1px solid $color-border;
+      
+      &:hover {
+        background-color: $color-bg-light;
+      }
+      
+      &--disabled {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+// ==================== 筛选器特定样式 ====================
+.filter {
+  &-panel {
+    width: $input-width-2xl;
+    padding: $spacing-lg;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  &-condition {
+    margin-bottom: $spacing-md;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  &-operator {
+    width: $input-width-md;
+  }
+  
+  &-input {
+    flex: 1;
+  }
+  
+  &-label {
+    font-size: $text-sm;
+    color: $color-text-secondary;
+    margin-bottom: $spacing-xs;
+  }
+}
+
+// ==================== 配置面板样式 ====================
+.config {
+  &-section {
+    margin-bottom: $spacing-2xl;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  &-header {
+    @include flex-between;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $color-border;
+    
+    .title {
+      margin: 0;
+      font-size: $text-lg;
+      font-weight: 600;
+      color: $color-text-primary;
+    }
+    
+    .help-icon {
+      color: $color-text-muted;
+      cursor: help;
+      
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+  
+  &-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+    
+    @media (max-width: $breakpoint-tablet) {
+      grid-template-columns: 1fr;
+      gap: $spacing-md;
+    }
+  }
+}
+
+// ==================== 颜色工具类 ====================
+.text {
+  &-primary { color: $color-primary; }
+  &-success { color: $color-success; }
+  &-warning { color: $color-warning; }
+  &-error { color: $color-error; }
+  &-muted { color: $color-text-muted; }
+  &-secondary { color: $color-text-secondary; }
+}
+
+.bg {
+  &-primary { background-color: $color-primary; }
+  &-success { background-color: $color-success; }
+  &-warning { background-color: $color-warning; }
+  &-error { background-color: $color-error; }
+  &-light { background-color: $color-bg-light; }
+  &-white { background-color: white; }
+}
+
+// ==================== 状态工具类 ====================
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.hidden { display: none; }
+.invisible { visibility: hidden; }
+
+.loading {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// ==================== 响应式工具类 ====================
+@media (max-width: $breakpoint-mobile) {
+  .mobile {
+    &-hidden { display: none !important; }
+    &-full { width: 100% !important; }
+    &-auto { width: auto !important; }
+    &-flex-col { flex-direction: column !important; }
+    &-text-center { text-align: center !important; }
+  }
+}
+
+@media (max-width: $breakpoint-tablet) {
+  .tablet {
+    &-hidden { display: none !important; }
+    &-full { width: 100% !important; }
+    &-auto { width: auto !important; }
+    &-flex-col { flex-direction: column !important; }
+  }
+}
+
+// ==================== 动画工具类 ====================
+.transition {
+  &-all { transition: all 0.2s ease; }
+  &-colors { transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
+  &-transform { transition: transform 0.2s ease; }
+}
+
+.hover {
+  &-scale:hover { transform: scale(1.05); }
+  &-shadow:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+  &-primary:hover { color: $color-primary; }
+}
+
+// ==================== 表单特定样式 ====================
+.form {
+  &-item {
+    margin-bottom: $spacing-lg;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .label {
+      font-size: $text-base;
+      color: $color-text-secondary;
+      margin-bottom: $spacing-xs;
+    }
+    
+    .desc {
+      font-size: $text-sm;
+      color: $color-text-muted;
+      margin-top: $spacing-xs;
+    }
+  }
+  
+  &-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: $spacing-lg;
+    
+    @media (max-width: $breakpoint-tablet) {
+      grid-template-columns: 1fr;
+      gap: $spacing-md;
+    }
+  }
+}

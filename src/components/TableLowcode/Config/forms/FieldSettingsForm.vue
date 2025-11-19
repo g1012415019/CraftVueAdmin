@@ -1,5 +1,5 @@
 <template>
-  <div class="field-settings">
+  <div class="field-settings-form">
     <n-form label-placement="left" label-width="70px" size="small">
       
       <!-- 字段管理 -->
@@ -11,6 +11,7 @@
             <span>显示帮助</span>
           </div>
         </div>
+        
         <!-- 批量操作 -->
         <div class="batch-actions" style="margin-top: 12px;">
           <n-space>
@@ -27,14 +28,7 @@
               size="small"
               style="width: 120px;"
               placeholder="批量操作"
-              :options="[
-                { label: '显示选中', value: 'show' },
-                { label: '隐藏选中', value: 'hide' },
-                { label: '固定选中', value: 'fix' },
-                { label: '取消固定', value: 'unfix' },
-                { label: '启用排序', value: 'sort' },
-                { label: '禁用排序', value: 'unsort' }
-              ]"
+              :options="batchActionOptions"
               @update:value="handleBatchAction"
               :disabled="selectedFieldsCount === 0"
             />
@@ -70,371 +64,322 @@
         
         <!-- 字段列表 -->
         <div class="field-list" style="margin-top: 8px;">
-          <!-- 表头 -->
-          <div class="field-header-row">
-            <div class="header-left">
-              <span style="width: 120px;">字段名 / 备注名</span>
+          <div v-if="filteredFields.length > 0">
+            <!-- 表头 -->
+            <div class="field-header-row">
+              <div class="header-left">
+                <span style="width: 120px;">字段名 / 备注名</span>
+              </div>
+              <div class="header-controls">
+                <span style="width: 70px;">宽度</span>
+                <span style="width: 70px;">对齐</span>
+                <span style="width: 40px;">固定</span>
+                <span style="width: 40px;">排序</span>
+                <span style="width: 40px;">状态</span>
+              </div>
             </div>
-            <div class="header-controls">
-              <span style="width: 70px;">宽度</span>
-              <span style="width: 70px;">对齐</span>
-              <span style="width: 40px;">固定</span>
-              <span style="width: 40px;">排序</span>
-              <span style="width: 40px;">状态</span>
-            </div>
-          </div>
-          
-          <div 
-            v-for="(field, index) in filteredFields" 
-            :key="field.key" 
-            class="field-item"
-            draggable="true"
-            @dragstart="handleDragStart(index)"
-            @dragover.prevent
-            @drop="handleDrop(index)"
-          >
-            <div class="field-content">
-              <div class="field-row">
-                <div class="field-left">
-                  <n-checkbox 
-                    v-model:checked="field.selected" 
-                    size="small"
-                    @click.stop
-                  />
-                  <n-icon size="14" class="drag-handle">
-                    <svg viewBox="0 0 24 24">
-                      <path fill="currentColor" d="M9 3h2v2H9V3zm4 0h2v2h-2V3zM9 7h2v2H9V7zm4 0h2v2h-2V7zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2z"/>
-                    </svg>
-                  </n-icon>
-                  <div class="field-name-area" style="width: 120px;">
-                    <n-input
-                      v-if="editingLabel === field.key"
-                      v-model:value="field.aliasName"
-                      size="small"
-                      placeholder="输入备注名"
-                      @blur="editingLabel = null"
-                      @keyup.enter="editingLabel = null"
-                      @click.stop
-                      autofocus
-                    />
-                    <n-text 
-                      v-else
-                      strong 
-                      style="display: block; font-size: 13px; cursor: pointer; padding: 4px 0;"
-                      @dblclick.stop="editingLabel = field.key"
-                    >
-                      {{ field.aliasName || field.label }}
-                    </n-text>
-                  </div>
-                </div>
-                <div class="field-controls">
-                  <div class="control-item" style="width: 70px;">
-                    <n-input-number 
-                      v-model:value="field.width" 
-                      size="small" 
-                      :min="50" 
-                      :max="500" 
-                      :step="10"
-                      @click.stop
-                    />
-                  </div>
-                  <div class="control-item" style="width: 70px;">
-                    <n-select 
-                      v-model:value="field.align" 
-                      size="small"
-                      :options="[
-                        { label: '左', value: 'left' },
-                        { label: '中', value: 'center' },
-                        { label: '右', value: 'right' }
-                      ]"
-                      @click.stop
-                    />
-                  </div>
-                  <div class="control-item" style="width: 40px;">
-                    <n-switch 
-                      v-model:value="field.fixed" 
-                      size="small" 
-                      @click.stop
-                    />
-                  </div>
-                  <div class="control-item" style="width: 40px;">
-                    <n-switch 
-                      v-model:value="field.sortable" 
+            
+            <div 
+              v-for="(field, index) in filteredFields" 
+              :key="field.key" 
+              class="field-item"
+              draggable="true"
+              @dragstart="handleDragStart(index)"
+              @dragover.prevent
+              @drop="handleDrop(index)"
+            >
+              <div class="field-content">
+                <div class="field-row">
+                  <div class="field-left">
+                    <n-checkbox 
+                      v-model:checked="field.selected" 
                       size="small"
                       @click.stop
                     />
+                    <n-icon size="14" class="drag-handle">
+                      <svg viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M9 3h2v2H9V3zm4 0h2v2h-2V3zM9 7h2v2H9V7zm4 0h2v2h-2V7zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2z"/>
+                      </svg>
+                    </n-icon>
+                    <div class="field-name-area" style="width: 120px;">
+                      <n-input
+                        v-if="editingLabel === field.key"
+                        v-model:value="field.title"
+                        size="small"
+                        placeholder="输入备注名"
+                        @blur="editingLabel = null"
+                        @keyup.enter="editingLabel = null"
+                        @click.stop
+                        autofocus
+                      />
+                      <n-text 
+                        v-else
+                        strong 
+                        style="display: block; font-size: 13px; cursor: pointer; padding: 4px 0;"
+                        @dblclick.stop="editingLabel = field.key"
+                      >
+                        {{ field.title || field.key }}
+                      </n-text>
+                    </div>
                   </div>
-                  <div class="control-item" style="width: 40px;">
-                    <n-switch 
-                      v-model:value="field.visible" 
-                      size="small"
-                      @update:value="updateFieldVisibility(field.key, $event)"
-                      @click.stop
-                    />
+                  <div class="field-controls">
+                    <div class="control-item" style="width: 70px;">
+                      <n-input-number 
+                        v-model:value="field.width" 
+                        size="small" 
+                        :min="50" 
+                        :max="500" 
+                        :step="10"
+                        @click.stop
+                      />
+                    </div>
+                    <div class="control-item" style="width: 70px;">
+                      <n-select 
+                        v-model:value="field.align" 
+                        size="small"
+                        :options="alignOptions"
+                        @click.stop
+                      />
+                    </div>
+                    <div class="control-item" style="width: 40px;">
+                      <n-switch 
+                        v-model:value="field.fixed" 
+                        size="small" 
+                        @click.stop
+                      />
+                    </div>
+                    <div class="control-item" style="width: 40px;">
+                      <n-switch 
+                        v-model:value="field.sortable" 
+                        size="small"
+                        @click.stop
+                      />
+                    </div>
+                    <div class="control-item" style="width: 40px;">
+                      <n-switch 
+                        :value="formState.visibility?.[field.key] !== false"
+                        size="small"
+                        @update:value="toggleFieldVisibility(field.key)"
+                        @click.stop
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          
+          <!-- 无列列表样式 -->
+          <div v-else-if="formState.fields && formState.fields.length === 0" class="empty-fields">
+            <n-empty 
+              description="暂无字段配置"
+              size="small"
+            >
+              <template #icon>
+                <n-icon size="48" color="#d9d9d9">
+                  <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M3 3h18v2H3V3zm0 4h18v2H3V7zm0 4h18v2H3v-2zm0 4h18v2H3v-2zm0 4h18v2H3v-2z"/>
+                  </svg>
+                </n-icon>
+              </template>
+              <template #extra>
+                <n-text depth="3" style="font-size: 12px;">
+                  请先配置表格列信息
+                </n-text>
+              </template>
+            </n-empty>
+          </div>
+          
+          <!-- 搜索无结果 -->
+          <div v-else class="empty-state">
+            <n-empty description="未找到匹配的字段" size="small" />
+          </div>
         </div>
         
-        <div v-if="filteredFields.length === 0" class="empty-state">
-          <n-empty description="未找到匹配的字段" size="small" />
+        <!-- 隐藏字段预览 -->
+        <div v-if="hiddenFields.length > 0" class="config-section">
+          <div class="section-title">隐藏字段预览</div>
+          <n-alert type="warning" :show-icon="false">
+            <div style="font-size: 12px;">
+              以下字段将对用户隐藏：{{ hiddenFields.map(f => f.title || f.key).join('、') }}
+            </div>
+          </n-alert>
         </div>
       </div>
-
-      <!-- 隐藏字段预览 -->
-      <div v-if="hiddenFields.length > 0" class="config-section">
-        <div class="section-title">隐藏字段预览</div>
-        <n-alert type="warning" :show-icon="false">
-          <div style="font-size: 12px;">
-            以下字段将对用户隐藏：{{ hiddenFields.map(f => f.label).join('、') }}
-          </div>
-        </n-alert>
-      </div>
-
     </n-form>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, inject, watch } from 'vue';
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
+import type { FieldSettingsConfig } from '../../types/config/fieldSettings'
+import type { TableColumn } from '../../types/table/column'
+import { debounce } from '../../utils/debounce'
+import { ConfigManager } from '../../utils/configManager'
 
-const config = inject('tableConfig') as Ref<any>;
+// ==================== 类型定义 ====================
 
-// 搜索关键词
-const searchKeyword = ref('');
+interface Props {
+  initialConfig?: Partial<FieldSettingsConfig>
+  columns?: TableColumn[]
+}
 
-// 帮助显示控制
-const showHelp = ref(false);
+// ==================== 组件定义 ====================
 
-// 编辑状态
-const editingLabel = ref<string | null>(null);
+const props = withDefaults(defineProps<Props>(), {
+  initialConfig: () => ({}),
+  columns: () => []
+})
 
-// 批量操作
-const batchAction = ref<string | null>(null);
+const emit = defineEmits<{
+  configChange: [config: FieldSettingsConfig]
+}>()
 
-// 初始化字段配置
-const initFieldConfig = () => {
-  if (!config.value.columns) {
-    config.value.columns = [
-      { key: 'id', label: 'ID', aliasName: '', width: 80, align: 'left', fixed: false, sortable: true, visible: false, selected: false },
-      { key: 'name', label: '姓名', aliasName: '', width: 120, align: 'left', fixed: false, sortable: true, visible: true, selected: false },
-      { key: 'age', label: '年龄', aliasName: '', width: 80, align: 'center', fixed: false, sortable: true, visible: true, selected: false },
-      { key: 'email', label: '邮箱', aliasName: '', width: 200, align: 'left', fixed: false, sortable: false, visible: true, selected: false },
-      { key: 'phone', label: '电话', aliasName: '', width: 140, align: 'left', fixed: false, sortable: false, visible: true, selected: false },
-      { key: 'department', label: '部门', aliasName: '', width: 120, align: 'left', fixed: false, sortable: true, visible: true, selected: false },
-      { key: 'status', label: '状态', aliasName: '', width: 100, align: 'center', fixed: false, sortable: true, visible: true, selected: false },
-      { key: 'createTime', label: '创建时间', aliasName: '', width: 160, align: 'center', fixed: false, sortable: true, visible: false, selected: false },
-      { key: 'updateTime', label: '更新时间', aliasName: '', width: 160, align: 'center', fixed: false, sortable: true, visible: false, selected: false },
-      { key: 'avatar', label: '头像', aliasName: '', width: 80, align: 'center', fixed: false, sortable: false, visible: true, selected: false },
-      { key: 'address', label: '地址', aliasName: '', width: 200, align: 'left', fixed: false, sortable: false, visible: true, selected: false },
-      { key: 'remark', label: '备注', aliasName: '', width: 200, align: 'left', fixed: false, sortable: false, visible: false, selected: false },
-    ];
-  }
-};
+// ==================== 组件内状态 ====================
 
-// 初始化配置
-initFieldConfig();
-
-// 字段数据
-const fieldList = ref(config.value.columns);
-
-// 监听字段配置变化，同步到全局配置
-watch(fieldList, (newFields) => {
-  config.value.columns = newFields;
-}, { deep: true });
-
-// 过滤后的字段
-const filteredFields = computed(() => {
-  if (!searchKeyword.value) return fieldList.value;
+const formState = ref<FieldSettingsConfig>({
+  // 使用 ConfigManager 提供的默认值
+  ...ConfigManager.getFieldSettingsDefaults(),
+  // 初始化字段配置
+  fields: props.columns.map(col => ({ ...col, selected: false })) || [],
   
-  const keyword = searchKeyword.value.toLowerCase();
-  return fieldList.value.filter(field => 
-    (field.label && field.label.toLowerCase().includes(keyword)) ||
-    (field.key && field.key.toLowerCase().includes(keyword)) ||
-    (field.aliasName && field.aliasName.toLowerCase().includes(keyword))
-  );
-});
+  // 合并Props传入的初始配置
+  ...props.initialConfig
+})
 
-// 可见字段数量
-const visibleFieldsCount = computed(() => {
-  return filteredFields.value.filter(field => field.visible).length;
-});
+// 其他状态
+const showHelp = ref(false)
+const searchKeyword = ref('')
+const editingLabel = ref<string | null>(null)
+const batchAction = ref<string | null>(null)
+const dragStartIndex = ref<number>(-1)
 
-// 选中字段数量
+// ==================== 计算属性 ====================
+
+const filteredFields = computed(() => {
+  if (!searchKeyword.value) return formState.value.fields || []
+  
+  return formState.value.fields?.filter(field => 
+    (field.title || field.key).toLowerCase().includes(searchKeyword.value.toLowerCase())
+  ) || []
+})
+
 const selectedFieldsCount = computed(() => {
-  return filteredFields.value.filter(field => field.selected).length;
-});
+  return formState.value.fields?.filter(field => field.selected).length || 0
+})
 
-// 隐藏的字段
-const hiddenFields = computed(() => {
-  return fieldList.value.filter(field => !field.visible);
-});
+const visibleFieldsCount = computed(() => {
+  return formState.value.fields?.filter(field => 
+    formState.value.visibility?.[field.key] !== false
+  ).length || 0
+})
 
-// 全选状态
 const isAllSelected = computed(() => {
-  return filteredFields.value.length > 0 && filteredFields.value.every(field => field.selected);
-});
+  return filteredFields.value.length > 0 && 
+         filteredFields.value.every(field => field.selected)
+})
 
-// 半选状态
 const isIndeterminate = computed(() => {
-  const selectedCount = filteredFields.value.filter(field => field.selected).length;
-  return selectedCount > 0 && selectedCount < filteredFields.value.length;
-});
+  const selectedCount = filteredFields.value.filter(field => field.selected).length
+  return selectedCount > 0 && selectedCount < filteredFields.value.length
+})
 
-// 处理全选
+const hiddenFields = computed(() => {
+  return formState.value.fields?.filter(field => 
+    formState.value.visibility?.[field.key] === false
+  ) || []
+})
+
+// ==================== 常量定义 ====================
+
+const alignOptions = [
+  { label: '左', value: 'left' },
+  { label: '中', value: 'center' },
+  { label: '右', value: 'right' }
+]
+
+const batchActionOptions = [
+  { label: '显示选中', value: 'show' },
+  { label: '隐藏选中', value: 'hide' },
+  { label: '启用排序', value: 'sort' },
+  { label: '禁用排序', value: 'unsort' }
+]
+
+// ==================== 工具函数 ====================
+
+const emitConfigChange = debounce(() => {
+  const configCopy = { ...formState.value }
+  emit('configChange', configCopy)
+}, 300)
+
+const toggleFieldVisibility = (fieldKey: string) => {
+  if (!formState.value.visibility) {
+    formState.value.visibility = {}
+  }
+  formState.value.visibility[fieldKey] = !formState.value.visibility[fieldKey]
+}
+
 const handleSelectAll = (checked: boolean) => {
   filteredFields.value.forEach(field => {
-    field.selected = checked;
-  });
-};
+    field.selected = checked
+  })
+}
 
-// 更新字段可见性
-const updateFieldVisibility = (fieldKey: string, visible: boolean) => {
-  const field = fieldList.value.find(f => f.key === fieldKey);
-  if (field) {
-    field.visible = visible;
-  }
-};
-
-// 全部显示
-const showAllFields = () => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  if (selectedFields.length === 0) {
-    window.$message?.warning('请先选择要操作的字段');
-    return;
-  }
-  selectedFields.forEach(field => {
-    field.visible = true;
-  });
-  window.$message?.success(`已显示 ${selectedFields.length} 个字段`);
-};
-
-// 全部隐藏
-const hideAllFields = () => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  if (selectedFields.length === 0) {
-    window.$message?.warning('请先选择要操作的字段');
-    return;
-  }
-  selectedFields.forEach(field => {
-    field.visible = false;
-  });
-  window.$message?.success(`已隐藏 ${selectedFields.length} 个字段`);
-};
-
-// 处理批量操作
 const handleBatchAction = (action: string) => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
+  const selectedFields = formState.value.fields?.filter(field => field.selected) || []
   
-  switch (action) {
-    case 'show':
-      selectedFields.forEach(field => field.visible = true);
-      window.$message?.success(`已显示 ${selectedFields.length} 个字段`);
-      break;
-    case 'hide':
-      selectedFields.forEach(field => field.visible = false);
-      window.$message?.success(`已隐藏 ${selectedFields.length} 个字段`);
-      break;
-    case 'fix':
-      selectedFields.forEach(field => field.fixed = true);
-      window.$message?.success(`已固定 ${selectedFields.length} 个字段`);
-      break;
-    case 'unfix':
-      selectedFields.forEach(field => field.fixed = false);
-      window.$message?.success(`已取消固定 ${selectedFields.length} 个字段`);
-      break;
-    case 'sort':
-      selectedFields.forEach(field => field.sortable = true);
-      window.$message?.success(`已启用 ${selectedFields.length} 个字段的排序`);
-      break;
-    case 'unsort':
-      selectedFields.forEach(field => field.sortable = false);
-      window.$message?.success(`已禁用 ${selectedFields.length} 个字段的排序`);
-      break;
-  }
+  selectedFields.forEach(field => {
+    switch (action) {
+      case 'show':
+        if (!formState.value.visibility) formState.value.visibility = {}
+        formState.value.visibility[field.key] = true
+        break
+      case 'hide':
+        if (!formState.value.visibility) formState.value.visibility = {}
+        formState.value.visibility[field.key] = false
+        break
+      case 'sort':
+        field.sortable = true
+        break
+      case 'unsort':
+        field.sortable = false
+        break
+    }
+    field.selected = false
+  })
   
-  // 重置选择
-  batchAction.value = null;
-};
-
-// 拖拽功能
-let draggedIndex = -1;
+  batchAction.value = null
+}
 
 const handleDragStart = (index: number) => {
-  draggedIndex = index;
-};
+  dragStartIndex.value = index
+}
 
 const handleDrop = (dropIndex: number) => {
-  if (draggedIndex === -1 || draggedIndex === dropIndex) return;
+  if (dragStartIndex.value === -1 || dragStartIndex.value === dropIndex) return
   
-  // 获取实际的字段对象
-  const draggedField = filteredFields.value[draggedIndex];
-  const dropField = filteredFields.value[dropIndex];
+  const fields = [...(formState.value.fields || [])]
+  const draggedField = fields[dragStartIndex.value]
+  fields.splice(dragStartIndex.value, 1)
+  fields.splice(dropIndex, 0, draggedField)
   
-  // 在原始数据中找到对应的索引
-  const originalDragIndex = fieldList.value.findIndex(f => f.key === draggedField.key);
-  const originalDropIndex = fieldList.value.findIndex(f => f.key === dropField.key);
-  
-  // 在原始数据中进行排序
-  const draggedItem = fieldList.value[originalDragIndex];
-  fieldList.value.splice(originalDragIndex, 1);
-  fieldList.value.splice(originalDropIndex, 0, draggedItem);
-  
-  draggedIndex = -1;
-};
+  formState.value.fields = fields
+  dragStartIndex.value = -1
+}
 
-// 批量设置宽度
-const batchSetWidth = () => {
-  const width = window.prompt('请输入宽度值 (50-500):', '120');
-  if (!width || isNaN(Number(width))) return;
-  
-  const widthNum = Number(width);
-  if (widthNum < 50 || widthNum > 500) {
-    window.$message?.warning('宽度值应在 50-500 之间');
-    return;
-  }
-  
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  selectedFields.forEach(field => {
-    field.width = widthNum;
-  });
-  window.$message?.success(`已设置 ${selectedFields.length} 个字段的宽度`);
-};
+// ==================== 生命周期 ====================
 
-// 批量设置对齐
-const batchSetAlign = () => {
-  const align = window.prompt('请输入对齐方式 (left/center/right):', 'left');
-  if (!align || !['left', 'center', 'right'].includes(align)) {
-    window.$message?.warning('请输入正确的对齐方式: left, center, right');
-    return;
-  }
-  
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  selectedFields.forEach(field => {
-    field.align = align;
-  });
-  window.$message?.success(`已设置 ${selectedFields.length} 个字段的对齐方式`);
-};
+onMounted(() => {
+  emitConfigChange()
+})
 
-// 批量设置固定
-const batchSetFixed = (fixed: boolean) => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  selectedFields.forEach(field => {
-    field.fixed = fixed;
-  });
-  window.$message?.success(`已${fixed ? '固定' : '取消固定'} ${selectedFields.length} 个字段`);
-};
-
-// 批量设置排序
-const batchSetSortable = (sortable: boolean) => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  selectedFields.forEach(field => {
-    field.sortable = sortable;
-  });
-  window.$message?.success(`已${sortable ? '启用' : '禁用'} ${selectedFields.length} 个字段的排序`);
-};
+watch(
+  () => formState.value,
+  () => {
+    emitConfigChange()
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>

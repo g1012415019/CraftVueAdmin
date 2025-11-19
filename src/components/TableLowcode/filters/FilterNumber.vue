@@ -6,7 +6,7 @@
       :placeholder="config?.placeholder || `请输入${config?.label}`"
       size="small"
       clearable
-      style="min-width: 120px;"
+      class="number-input"
       @update:value="handleUpdate"
     />
   </div>
@@ -19,48 +19,45 @@ interface FilterConfig {
   key: string
   label: string
   placeholder?: string
-  defaultValue?: string
 }
 
 interface Props {
-  config?: FilterConfig
+  config: FilterConfig
+  modelValue?: number
 }
 
 const props = defineProps<Props>()
-
 const emit = defineEmits<{
-  update: [key: string, value: number | null]
+  'update:modelValue': [value: number | null]
+  'update': [key: string, value: number | null]
 }>()
 
-const numberValue = ref<number | null>(null)
+const numberValue = ref<number | null>(props.modelValue || null)
 
 const handleUpdate = (value: number | null) => {
-  if (props.config) {
-    emit('update', props.config.key, value)
-  }
+  numberValue.value = value
+  emit('update:modelValue', value)
+  emit('update', props.config.key, value)
 }
 
-// 监听默认值变化
-watch(() => props.config?.defaultValue, (newValue) => {
-  if (newValue !== undefined) {
-    numberValue.value = Number(newValue) || null
-  }
-}, { immediate: true })
+watch(() => props.modelValue, (newValue) => {
+  numberValue.value = newValue || null
+})
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../styles/utilities.scss' as *;
+
 .filter-number {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 300px;
-}
-
-.filter-label {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  min-width: 60px;
-  text-align: right;
+  flex-direction: column;
+  
+  .filter-label {
+    font-size: 12px; color: #666; margin-bottom: 4px;
+  }
+  
+  .number-input {
+    width: 160px;
+  }
 }
 </style>

@@ -52,7 +52,9 @@ const handleUpdate = (value: any) => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import "../styles/utilities.scss";
+
 .filter-radio {
   display: flex;
   align-items: center;

@@ -1,111 +1,111 @@
-import { ref, computed, type Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 
-export function useTableData(config: Ref<any>) {
-  const totalCount = ref(1250)
-  const filteredCount = ref(1250)
-  const currentPage = ref(1)
-  const currentPageSize = ref(10)
-  const filterValues = ref({})
-  const showAdvancedFilter = ref(false)
-
-  const statusOptions = ref([
-    { label: '启用', value: 'active' },
-    { label: '禁用', value: 'inactive' }
-  ])
-
-  const filterFields = computed(() => {
-    return config.value?.filters?.selectedFieldsConfig || []
-  })
-
-  const filterBarFields = computed(() => {
-    const currentViewKey = config?.value?.currentViewKey || 'all'
-    const currentView = config?.value?.views?.find(v => v.key === currentViewKey)
-    
-    console.log('重新计算筛选字段:', currentViewKey)
-    
-    // 优先使用主配置的 filters
-    if (config?.value?.filters && Array.isArray(config.value.filters)) {
-      const fields = config.value.filters.filter(f => f.show !== false)
-      console.log('使用主配置筛选字段:', fields)
-      return fields
-    }
-    
-    // 其次使用视图配置的 filters
-    if (currentView?.config?.filters) {
-      const fields = currentView.config.filters.filter(f => f.show !== false)
-      console.log('使用视图配置筛选字段:', fields)
-      return fields
-    }
-    
-    console.log('使用默认筛选字段:', filterFields.value)
-    return filterFields.value
-  })
+/**
+ * 表格数据管理组合式函数
+ * @param data 表格数据
+ * @param config 表格配置
+ */
+export function useTableData(
+  data: Ref<any[]>, 
+  config?: Ref<any>
+) {
+  // ==================== 计算属性 ====================
   
-  // 筛选可见性 - 有筛选字段时显示
-  const filterVisible = computed(() => {
-    const hasFields = filterBarFields.value.length > 0
-    console.log('筛选可见性:', hasFields, '字段数量:', filterBarFields.value.length)
-    return hasFields
-  })
-  const advancedFilterFields = computed(() => {
-    const currentViewKey = config?.value?.currentViewKey || 'all'
-    const currentView = config?.value?.views?.find(v => v.key === currentViewKey)
-    
-    if (currentView?.config?.filters) {
-      const advancedFields = currentView.config.filters.filter(f => f.advancedFilter && f.show !== false)
-      console.log('高级筛选字段:', advancedFields)
-      return advancedFields
+  /**
+   * 表格数据
+   */
+  const tableData = computed(() => data.value || [])
+  
+  /**
+   * 数据总数
+   */
+  const totalCount = computed(() => tableData.value.length)
+  
+  /**
+   * 是否为空
+   */
+  const isEmpty = computed(() => tableData.value.length === 0)
+  
+  // ==================== 数据操作 ====================
+  
+  /**
+   * 刷新数据
+   */
+  const refreshData = () => {
+    // 触发刷新事件
+    config?.value?.events?.onRefresh?.()
+  }
+  
+  /**
+   * 添加行数据
+   */
+  const addRow = (row: any) => {
+    data.value.push(row)
+  }
+  
+  /**
+   * 更新行数据
+   */
+  const updateRow = (index: number, row: any) => {
+    if (data.value[index]) {
+      data.value[index] = { ...data.value[index], ...row }
     }
-    
-    return filterFields.value.filter(field => field.advancedFilter)
-  })
-  const pageCount = computed(() => Math.ceil(totalCount.value / currentPageSize.value))
-
-  const advancedFilterCount = computed(() => {
-    let count = 0
-    advancedFilterFields.value.forEach(field => {
-      const value = filterValues.value[field.key]
-      if (field.type === 'numberRange') {
-        if (filterValues.value[field.key + 'Min'] || filterValues.value[field.key + 'Max']) count++
-      } else if (field.type === 'multiSelect' && value?.length > 0) {
-        count++
-      } else if (value) {
-        count++
-      }
+  }
+  
+  /**
+   * 删除行数据
+   */
+  const deleteRow = (index: number) => {
+    if (data.value[index]) {
+      data.value.splice(index, 1)
+    }
+  }
+  
+  /**
+   * 批量删除行数据
+   */
+  const deleteRows = (indexes: number[]) => {
+    // 从后往前删除，避免索引问题
+    indexes.sort((a, b) => b - a).forEach(index => {
+      deleteRow(index)
     })
-    return count
-  })
-
-  const updateFilter = (key: string, value: any) => {
-    filterValues.value[key] = value
   }
-
-  const handleSearch = () => config?.value?.onSearch?.(filterValues.value)
-  const handleReset = () => Object.keys(filterValues.value).forEach(key => filterValues.value[key] = null)
-  const handleAdvancedSearch = () => {
-    showAdvancedFilter.value = false
-    config?.value?.onAdvancedSearch?.(filterValues.value)
+  
+  /**
+   * 获取指定行数据
+   */
+  const getRow = (index: number) => {
+    return data.value[index] || null
   }
-  const handleAdvancedReset = () => handleReset()
-  const handleRefreshView = () => console.log('刷新视图')
+  
+  /**
+   * 查找行数据
+   */
+  const findRow = (predicate: (row: any, index: number) => boolean) => {
+    return data.value.find(predicate)
+  }
+  
+  /**
+   * 查找行索引
+   */
+  const findRowIndex = (predicate: (row: any, index: number) => boolean) => {
+    return data.value.findIndex(predicate)
+  }
 
   return {
+    // 计算属性
+    tableData,
     totalCount,
-    filteredCount,
-    currentPage,
-    currentPageSize,
-    pageCount,
-    filterValues,
-    showAdvancedFilter,
-    filterVisible,
-    filterBarFields,
-    advancedFilterFields,
-    advancedFilterCount,
-    updateFilter,
-    handleSearch,
-    handleReset,
-    handleAdvancedSearch,
-    handleAdvancedReset,
-    handleRefreshView
+    isEmpty,
+    
+    // 数据操作
+    refreshData,
+    addRow,
+    updateRow,
+    deleteRow,
+    deleteRows,
+    getRow,
+    findRow,
+    findRowIndex
   }
 }

@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Chinese Code Support",
+  "description": "Monitors Vue, TypeScript, and documentation files to provide Chinese language support for code comments, documentation, and user-facing text",
+  "version": "1",
+  "when": {
+    "type": "fileCreated",
+    "patterns": [
+      "src/**/*.vue",
+      "src/**/*.ts",
+      "src/**/*.js",
+      "docs/**/*.md",
+      "README.md",
+      "**/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Please review the changed files and provide Chinese language support. This includes:\n\n1. Adding Chinese comments to complex code sections\n2. Translating user-facing text and messages to Chinese\n3. Ensuring proper Chinese character encoding and display\n4. Adding Chinese documentation where appropriate\n5. Maintaining both English and Chinese versions for international compatibility\n\nFocus on:\n- Vue component templates with user-facing text\n- TypeScript interfaces and type definitions that need Chinese descriptions\n- Error messages and user notifications\n- Documentation files that should have Chinese versions\n- Configuration files with Chinese labels\n\nProvide the Chinese translations while maintaining code functionality and following Vue 3 + TypeScript best practices."
+  }
+}

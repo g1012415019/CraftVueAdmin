@@ -197,205 +197,240 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, watch } from 'vue';
+import { ref, computed, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
+import type { SortConfig } from '../../types/config/sortSettings'
+import type { TableColumn } from '../../types/table/column'
+import { debounce } from '../../utils/debounce'
+import { ConfigManager } from '../../utils/configManager'
 
-const config = inject('tableConfig') as Ref<any>;
+// ==================== 类型定义 ====================
 
-// 搜索关键词
-const searchKeyword = ref('');
+interface Props {
+  initialConfig?: Partial<SortConfig>
+  columns?: TableColumn[]
+}
 
-// 帮助显示控制
-const showHelp = ref(false);
+// ==================== 组件定义 ====================
 
-// 批量操作
-const batchAction = ref<string | null>(null);
+const props = withDefaults(defineProps<Props>(), {
+  initialConfig: () => ({}),
+  columns: () => []
+})
 
-// 排序设置
-const enableSort = ref(true);
-const sortMode = ref('single');
-const defaultSortField = ref('createTime');
-const defaultSortOrder = ref('desc');
+const emit = defineEmits<{
+  configChange: [config: SortConfig]
+}>()
 
-// 初始化字段配置
-const initSortConfig = () => {
-  if (!config.value.columns) {
-    config.value.columns = [];
-  }
+// ==================== 组件内状态 ====================
+
+const formState = ref<SortConfig>({
+  // 使用 ConfigManager 提供的默认值
+  ...ConfigManager.getSortDefaults(),
+  // 初始化字段配置
+  fields: props.columns.map(col => ({ 
+    ...col, 
+    selected: false,
+    sortType: 'text',
+    defaultOrder: 'asc'
+  })) || [],
   
-  // 确保每个字段都有排序相关属性
-  config.value.columns.forEach(field => {
-    if (field.sortType === undefined) field.sortType = 'text';
-    if (field.defaultOrder === undefined) field.defaultOrder = 'asc';
-    if (field.selected === undefined) field.selected = false;
-  });
-};
+  // 合并Props传入的初始配置
+  ...props.initialConfig
+})
 
-// 初始化配置
-initSortConfig();
+// 其他状态
+const searchKeyword = ref('')
+const showHelp = ref(false)
+const batchAction = ref<string | null>(null)
+const dragStartIndex = ref<number>(-1)
 
-// 字段数据
-const fieldList = ref(config.value.columns);
+// 便捷访问
+const enableSort = computed({
+  get: () => formState.value.enabled,
+  set: (val) => formState.value.enabled = val
+})
 
-// 监听字段配置变化，同步到全局配置
-watch(fieldList, (newFields) => {
-  config.value.columns = newFields;
-}, { deep: true });
+const sortMode = computed({
+  get: () => formState.value.multiSort ? 'multiple' : 'single',
+  set: (val) => formState.value.multiSort = val === 'multiple'
+})
 
-// 过滤后的字段
+const defaultSortField = computed({
+  get: () => formState.value.defaultField,
+  set: (val) => formState.value.defaultField = val
+})
+
+const defaultSortOrder = computed({
+  get: () => formState.value.defaultDirection,
+  set: (val) => formState.value.defaultDirection = val
+})
+
+// ==================== 计算属性 ====================
+
+const fieldOptions = computed(() => {
+  return props.columns.map(col => ({
+    label: col.title || col.key,
+    value: col.key
+  }))
+})
+
 const filteredFields = computed(() => {
-  if (!searchKeyword.value) return fieldList.value;
+  if (!searchKeyword.value) return formState.value.fields || []
   
-  const keyword = searchKeyword.value.toLowerCase();
-  return fieldList.value.filter(field => 
-    (field.label && field.label.toLowerCase().includes(keyword)) ||
-    (field.key && field.key.toLowerCase().includes(keyword))
-  );
-});
+  return formState.value.fields?.filter(field => 
+    (field.title || field.key).toLowerCase().includes(searchKeyword.value.toLowerCase())
+  ) || []
+})
 
-// 选中字段数量
 const selectedFieldsCount = computed(() => {
-  return filteredFields.value.filter(field => field.selected).length;
-});
+  return formState.value.fields?.filter(field => field.selected).length || 0
+})
 
-// 启用排序的字段数量
 const enabledSortCount = computed(() => {
-  return filteredFields.value.filter(field => field.sortable).length;
-});
+  return formState.value.fields?.filter(field => field.sortable).length || 0
+})
 
-// 全选状态
 const isAllSelected = computed(() => {
-  return filteredFields.value.length > 0 && filteredFields.value.every(field => field.selected);
-});
+  return filteredFields.value.length > 0 && 
+         filteredFields.value.every(field => field.selected)
+})
 
-// 半选状态
 const isIndeterminate = computed(() => {
-  const selectedCount = filteredFields.value.filter(field => field.selected).length;
-  return selectedCount > 0 && selectedCount < filteredFields.value.length;
-});
+  const selectedCount = filteredFields.value.filter(field => field.selected).length
+  return selectedCount > 0 && selectedCount < filteredFields.value.length
+})
 
-// 处理全选
-const handleSelectAll = (checked: boolean) => {
-  filteredFields.value.forEach(field => {
-    field.selected = checked;
-  });
-};
-
-// 处理批量操作
-const handleBatchAction = (action: string) => {
-  const selectedFields = filteredFields.value.filter(field => field.selected);
-  
-  switch (action) {
-    case 'enable':
-      selectedFields.forEach(field => field.sortable = true);
-      window.$message?.success(`已启用 ${selectedFields.length} 个字段的排序`);
-      break;
-    case 'disable':
-      selectedFields.forEach(field => field.sortable = false);
-      window.$message?.success(`已禁用 ${selectedFields.length} 个字段的排序`);
-      break;
-    case 'asc':
-      selectedFields.forEach(field => field.defaultOrder = 'asc');
-      window.$message?.success(`已设置 ${selectedFields.length} 个字段为升序`);
-      break;
-    case 'desc':
-      selectedFields.forEach(field => field.defaultOrder = 'desc');
-      window.$message?.success(`已设置 ${selectedFields.length} 个字段为降序`);
-      break;
-  }
-  
-  // 重置选择
-  batchAction.value = null;
-};
-
-// 拖拽功能
-let draggedIndex = -1;
-
-const handleDragStart = (index: number) => {
-  draggedIndex = index;
-};
-
-const handleDrop = (dropIndex: number) => {
-  if (draggedIndex === -1 || draggedIndex === dropIndex) return;
-  
-  // 获取实际的字段对象
-  const draggedField = filteredFields.value[draggedIndex];
-  const dropField = filteredFields.value[dropIndex];
-  
-  // 在原始数据中找到对应的索引
-  const originalDragIndex = fieldList.value.findIndex(f => f.key === draggedField.key);
-  const originalDropIndex = fieldList.value.findIndex(f => f.key === dropField.key);
-  
-  // 在原始数据中进行排序
-  const draggedItem = fieldList.value[originalDragIndex];
-  fieldList.value.splice(originalDragIndex, 1);
-  fieldList.value.splice(originalDropIndex, 0, draggedItem);
-  
-  draggedIndex = -1;
-};
-
-const defaultSortFieldOptions = [
-  { label: '创建时间', value: 'createTime', type: 'date' },
-  { label: '更新时间', value: 'updateTime', type: 'date' },
-  { label: '姓名', value: 'name', type: 'text' },
-  { label: '年龄', value: 'age', type: 'number' },
-];
+const defaultSortFieldOptions = computed(() => {
+  return formState.value.fields?.map(field => ({
+    label: field.title || field.key,
+    value: field.key,
+    type: field.sortType || 'text'
+  })) || []
+})
 
 const sortTypeOptions = [
   { label: '文本', value: 'text' },
   { label: '数字', value: 'number' },
-  { label: '日期', value: 'date' },
-];
+  { label: '日期', value: 'date' }
+]
+
+// ==================== 工具函数 ====================
+
+const emitConfigChange = debounce(() => {
+  const configCopy = { ...formState.value }
+  emit('configChange', configCopy)
+}, 300)
+
+const handleSelectAll = (checked: boolean) => {
+  filteredFields.value.forEach(field => {
+    field.selected = checked
+  })
+}
+
+const handleBatchAction = (action: string) => {
+  const selectedFields = formState.value.fields?.filter(field => field.selected) || []
+  
+  selectedFields.forEach(field => {
+    switch (action) {
+      case 'enable':
+        field.sortable = true
+        break
+      case 'disable':
+        field.sortable = false
+        break
+      case 'asc':
+        field.defaultOrder = 'asc'
+        break
+      case 'desc':
+        field.defaultOrder = 'desc'
+        break
+    }
+    field.selected = false
+  })
+  
+  batchAction.value = null
+}
+
+const handleDragStart = (index: number) => {
+  dragStartIndex.value = index
+}
+
+const handleDrop = (dropIndex: number) => {
+  if (dragStartIndex.value === -1 || dragStartIndex.value === dropIndex) return
+  
+  const fields = [...(formState.value.fields || [])]
+  const draggedField = fields[dragStartIndex.value]
+  fields.splice(dragStartIndex.value, 1)
+  fields.splice(dropIndex, 0, draggedField)
+  
+  formState.value.fields = fields
+  dragStartIndex.value = -1
+}
 
 const getSortOrderOptions = (fieldValue: string) => {
-  const field = defaultSortFieldOptions.find(f => f.value === fieldValue);
-  const type = field?.type || 'text';
-  return getFieldSortOptions(type);
-};
+  const field = defaultSortFieldOptions.value.find(f => f.value === fieldValue)
+  const type = field?.type || 'text'
+  return getFieldSortOptions(type)
+}
 
 const getFieldSortOptions = (sortType: string) => {
   switch (sortType) {
     case 'date':
       return [
         { label: '最新在前', value: 'desc' },
-        { label: '最旧在前', value: 'asc' },
-      ];
+        { label: '最旧在前', value: 'asc' }
+      ]
     case 'number':
       return [
         { label: '大到小(9-0)', value: 'desc' },
-        { label: '小到大(0-9)', value: 'asc' },
-      ];
+        { label: '小到大(0-9)', value: 'asc' }
+      ]
     case 'text':
       return [
         { label: '字母顺序(A-Z)', value: 'asc' },
-        { label: '字母倒序(Z-A)', value: 'desc' },
-      ];
+        { label: '字母倒序(Z-A)', value: 'desc' }
+      ]
     default:
       return [
         { label: '升序', value: 'asc' },
-        { label: '降序', value: 'desc' },
-      ];
+        { label: '降序', value: 'desc' }
+      ]
   }
-};
+}
 
 const getFullSortPreview = () => {
-  const parts = [];
+  const parts: string[] = []
   
   if (defaultSortField.value) {
-    const defaultField = defaultSortFieldOptions.find(f => f.value === defaultSortField.value);
-    const orderText = defaultSortOrder.value === 'desc' ? '降序' : '升序';
-    parts.push(`默认: ${defaultField?.label}(${orderText})`);
+    const defaultField = defaultSortFieldOptions.value.find(f => f.value === defaultSortField.value)
+    const orderText = defaultSortOrder.value === 'desc' ? '降序' : '升序'
+    parts.push(`默认: ${defaultField?.label}(${orderText})`)
   }
   
   if (enabledSortCount.value > 0) {
-    const enabledFields = fieldList.value
-      .filter(f => f.sortable)
-      .map(f => `${f.label}(${f.defaultOrder === 'desc' ? '降序' : '升序'})`)
-      .join(', ');
-    parts.push(`可排序: ${enabledFields}`);
+    const enabledFields = formState.value.fields
+      ?.filter(f => f.sortable)
+      .map(f => `${f.title || f.key}(${f.defaultOrder === 'desc' ? '降序' : '升序'})`)
+      .join(', ')
+    parts.push(`可排序: ${enabledFields}`)
   }
   
-  return parts.join(' | ') || '无排序规则';
-};
+  return parts.join(' | ') || '无排序规则'
+}
+
+// ==================== 生命周期 ====================
+
+onMounted(() => {
+  emitConfigChange()
+})
+
+watch(
+  () => formState.value,
+  () => {
+    emitConfigChange()
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
@@ -604,5 +639,26 @@ const getFullSortPreview = () => {
   font-size: 13px;
   min-height: 28px;
   height: 28px;
+}
+
+@media (max-width: 768px) {
+  .sort-settings {
+    padding: 8px;
+  }
+  
+  .config-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .field-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .field-controls {
+    justify-content: space-between;
+  }
 }
 </style>

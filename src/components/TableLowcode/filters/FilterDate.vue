@@ -48,19 +48,19 @@ watch(() => props.config?.defaultValue, (newValue) => {
 }, { immediate: true })
 </script>
 
-<style scoped>
-.filter-date {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 300px;
-}
+<style lang="scss" scoped>
+@use '../styles/utilities.scss' as *;
 
-.filter-label {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  min-width: 60px;
-  text-align: right;
+.filter-date {
+  flex-direction: column;
+  gap: 4px;
+  
+  .filter-label {
+    font-size: 12px; color: #666; margin-bottom: 4px;
+  }
+  
+  .date-picker {
+    min-width: 140px;
+  }
 }
 </style>

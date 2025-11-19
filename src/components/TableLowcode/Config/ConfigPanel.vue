@@ -1,5 +1,5 @@
 <template>
-  <n-drawer v-model:show="show" :width="800" placement="right" :z-index="1000">
+  <n-drawer :show="true" @update:show="emit('update:show', $event)" :width="800" placement="right" :z-index="1000">
     <n-drawer-content closable :body-content-style="{ padding: '0' }">
       <template #header>
         <div class="drawer-header">
@@ -15,11 +15,11 @@
                 autofocus
                 style="width: 200px;"
               />
-              <span v-else>{{ drawerTitle }}</span>
+              <span v-else>配置面板 - {{ props.currentViewName || '默认视图' }}</span>
             </div>
             <div class="view-info">
               <n-text depth="3" style="font-size: 11px;">
-                表格ID: {{ tableId }} | 视图ID: 
+                视图ID: 
                 <span @dblclick="startEditViewKey" style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
                   <n-input
                     v-if="editingViewKey"
@@ -32,7 +32,7 @@
                     style="width: 180px;"
                   />
                   <template v-else>
-                    {{ viewKey }}
+                    {{ props.viewKey || props.viewConfig.key }}
                     <n-icon size="12" style="opacity: 0.6;">
                       <EditIcon />
                     </n-icon>
@@ -73,7 +73,12 @@
         <!-- 右侧内容 -->
         <div class="content-area">
           <div class="content-body">
-            <component :is="currentComponent" />
+            <component 
+              :is="components[activeMenu] || BasicSettingsForm" 
+              :initial-config="getCurrentConfig()"
+              :columns="props.viewConfig?.columns || []"
+              @config-change="handleConfigChange"
+            />
           </div>
           
           <div class="content-footer">
@@ -122,15 +127,23 @@
     </template>
     <div class="config-modal-content">
       <n-text style="font-size: 13px; line-height: 1.6; color: #555;">
-        {{ fullConfigDescription }}
+        {{ getConfigDescription() }}
       </n-text>
     </div>
   </n-modal>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, inject, watch, provide, type Ref } from 'vue';
-import { useTableConfigStore } from '@/store/modules/tableConfig';
+import { ref, computed, toRaw } from 'vue';
+import { useMessage } from 'naive-ui';
+import type { 
+  BasicConfig,
+  PaginationConfig, 
+  FilterListConfig,
+  DataFilterConfig,
+  ConfigPanelProps,
+  ExternalConfig
+} from '../types';
 import BasicSettingsForm from './forms/BasicSettingsForm.vue';
 import PaginationSettingsForm from './forms/PaginationSettingsForm.vue';
 import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
@@ -141,839 +154,308 @@ import {
   EditOutlined as EditIcon
 } from '@vicons/antd'
 
-const props = defineProps<{
-  show: boolean;
-  currentViewName?: string;
-  tableId?: string;
-  viewKey?: string;
-}>();
+const props = defineProps<ConfigPanelProps>();
 
-const baseConfig = inject('tableConfig') as Ref<any>;
+const emit = defineEmits(['update:show', 'config-updated']);
 
-// 当前视图的配置 - 根据视图ID获取对应配置
-const config = computed({
-  get: () => {
-    if (!baseConfig?.value) return {};
-    
-    const currentViewKey = baseConfig.value.currentViewKey || 'all';
-    const currentView = baseConfig.value.views?.find(v => v.key === currentViewKey);
-    
-    // 返回当前视图的配置
-    return currentView?.config || {};
-  },
-  set: (newConfig) => {
-    if (!baseConfig?.value) return;
-    
-    const currentViewKey = baseConfig.value.currentViewKey || 'all';
-    const viewIndex = baseConfig.value.views?.findIndex(v => v.key === currentViewKey);
-    
-    if (viewIndex >= 0) {
-      // 直接修改视图配置，避免触发响应式循环
-      const views = baseConfig.value.views;
-      views[viewIndex] = {
-        ...views[viewIndex],
-        config: { ...newConfig }
-      };
-      
-      // 更新主配置
-      Object.keys(newConfig).forEach(key => {
-        if (key !== 'data' && key !== 'views') {
-          baseConfig.value[key] = newConfig[key];
-        }
-      });
-    }
-  }
-});
+/** 消息提示实例 */
+const message = useMessage();
 
-provide('tableConfig', config);
-
-// 确保配置有完整的默认值
-if (config?.value) {
-  if (!config.value.basic) {
-    config.value.basic = {
-      title: '数据表',
-      description: '',
-      rowDensity: 'medium',
-      rowHeight: 36,
-      showRowNumber: false,
-      bordered: true,
-      striped: false,
-      headerTextWrap: false,
-      showSummaryRow: false
-    };
-  }
-  if (!config.value.pagination) {
-    config.value.pagination = {
-      enabled: true,
-      defaultPageSize: 10,
-      showSizeChanger: true,
-      showQuickJumper: true,
-      pageSizeOptions: ['10', '20', '50', '100']
-    };
-  }
-  if (!config.value.actionBar) {
-    config.value.actionBar = {
-      enabled: true,
-      showCreate: true,
-      showImport: true,
-      showExport: true,
-      showRefresh: true,
-      showPrint: true,
-      showFullscreen: true,
-      showConfig: true
-    };
-  }
-  
-  // 确保有数据过滤配置，并从当前视图过滤条件生成
-  if (!config.value.dataFilter) {
-    config.value.dataFilter = {
-      groups: []
-    };
-  }
-  
-// 提供配置给子组件
-provide('tableConfig', config);
-watch(() => config.value, (newConfig) => {
-  console.log('配置面板配置变化:', newConfig)
-  
-  if (!baseConfig?.value || !newConfig) return;
-  
-  const currentViewKey = baseConfig.value.currentViewKey || 'all';
-  const viewIndex = baseConfig.value.views?.findIndex(v => v.key === currentViewKey);
-  
-  if (viewIndex >= 0) {
-    console.log('同步配置到视图和主配置')
-    
-    // 更新视图配置
-    baseConfig.value.views[viewIndex].config = { ...newConfig };
-    
-    // 强制同步到主配置
-    Object.keys(newConfig).forEach(key => {
-      if (key !== 'data' && key !== 'views' && key !== 'currentViewKey' && key !== 'currentViewFilter') {
-        baseConfig.value[key] = newConfig[key];
-      }
-    });
-    
-    // 强制触发更新
-    baseConfig.value.dataUpdateTrigger = Date.now();
-    
-    console.log('主配置已更新:', baseConfig.value)
-  }
-}, { deep: true, immediate: false });
-watch(() => config.value, (newConfig) => {
-  const baseConfig = inject('tableConfig') as Ref<any>;
-  
-  if (baseConfig?.value && newConfig) {
-    const currentViewKey = baseConfig.value.currentViewKey;
-    const currentViewIndex = baseConfig.value.views?.findIndex(v => v.key === currentViewKey);
-    
-    if (currentViewIndex >= 0) {
-      // 保存配置到当前视图
-      baseConfig.value.views[currentViewIndex].config = {
-        ...newConfig,
-        // 移除全局信息
-        data: undefined,
-        views: undefined,
-        currentViewKey: undefined,
-        currentViewFilter: undefined
-      };
-      
-      // 触发主配置更新
-      baseConfig.value.dataUpdateTrigger = Date.now();
-    }
-  }
-}, { deep: true });
-
-// 监听视图变化，更新数据过滤显示
-watch(() => {
-  const baseConfig = inject('tableConfig') as Ref<any>;
-  return baseConfig?.value?.currentViewKey;
-}, (newViewKey) => {
-  const baseConfig = inject('tableConfig') as Ref<any>;
-  
-  if (baseConfig?.value && newViewKey) {
-    const currentView = baseConfig.value.views?.find(v => v.key === newViewKey);
-    
-    if (currentView) {
-      // 更新数据过滤显示
-      if (currentView.filter && Object.keys(currentView.filter).length > 0) {
-        const conditions = Object.entries(currentView.filter).map(([field, value]) => ({
-          field,
-          operator: 'eq',
-          value,
-          logic: 'AND'
-        }));
-        
-        // 这里需要更新当前视图配置中的数据过滤
-        if (config.value.dataFilter) {
-          config.value.dataFilter.groups = [{
-            name: `${currentView.label} - 过滤条件`,
-            logic: 'AND',
-            groupLogic: 'AND',
-            conditions
-          }];
-        }
-      }
-    }
-  }
-}, { immediate: true });
-watch(() => config?.value?.currentViewKey, (newViewKey) => {
-  if (config?.value && newViewKey) {
-    // 找到当前视图的配置
-    const currentView = config.value.views?.find(v => v.key === newViewKey);
-    
-    if (currentView) {
-      // 更新数据过滤显示
-      if (currentView.filter && Object.keys(currentView.filter).length > 0) {
-        const conditions = Object.entries(currentView.filter).map(([field, value]) => ({
-          field,
-          operator: 'eq',
-          value,
-          logic: 'AND'
-        }));
-        
-        config.value.dataFilter = {
-          groups: [{
-            name: `${currentView.label} - 过滤条件`,
-            logic: 'AND',
-            groupLogic: 'AND',
-            conditions
-          }]
-        };
-      } else {
-        config.value.dataFilter = {
-          groups: [{
-            name: '条件组 1',
-            logic: 'AND',
-            groupLogic: 'AND',
-            conditions: []
-          }]
-        };
-      }
-    }
-  }
-}, { immediate: true });
-}
-
-// 提供配置给子组件
-provide('tableConfig', config);
-
-const emit = defineEmits<{
-  'update:show': [value: boolean];
-  'config-change': [config: any];
-  'update-view-name': [name: string];
-  'update-view-key': [key: string];
-}>();
-
-// 监听配置变化，实时更新表格和保存到 store
-watch(
-  () => config.value,
-  (newConfig) => {
-    if (newConfig) {
-      // 通知父组件配置变化
-      emit('config-change', newConfig);
-    }
-  },
-  { deep: true, flush: 'post' }
-);
-
-const show = computed({
-  get: () => props.show,
-  set: (value) => {
-    emit('update:show', value);
-  },
-});
-
+/** 当前激活的菜单项 */
 const activeMenu = ref('basic');
-
-// 弹窗控制
+/** 是否正在编辑标题 */
+const editingTitle = ref(false);
+/** 是否正在编辑视图键名 */
+const editingViewKey = ref(false);
+/** 临时标题文本 */
+const tempTitle = ref('');
+/** 临时视图键名文本 */
+const tempViewKey = ref('');
+/** 是否显示配置查看弹窗 */
 const showConfigModal = ref(false);
+/** 是否显示导入配置弹窗 */
 const showImportModal = ref(false);
+/** 导入配置的文本内容 */
 const importConfigText = ref('');
 
-// 监听视图名称变化，重置菜单选择
-watch(() => props.currentViewName, () => {
-  activeMenu.value = 'basic';
-});
-
-// 实时计算完整配置描述
-const fullConfigDescription = computed(() => {
-  // 确保配置变化时重新计算
-  const currentConfig = config.value;
-  if (!currentConfig) return '暂无配置信息';
-  
-  const parts: string[] = [];
-  
-  // 基础配置
-  if (currentConfig.basic) {
-    const basic = currentConfig.basic;
-    parts.push(`查询表格"${basic.title || '数据表'}"`);
-    
-    if (basic.description) {
-      parts.push(`说明：${basic.description}`);
-    }
-  } else {
-    parts.push('查询表格"数据表"');
-  }
-  
-  // 列配置
-  if (currentConfig.columns && Array.isArray(currentConfig.columns) && currentConfig.columns.length > 0) {
-    const visibleColumns = currentConfig.columns.filter((col: any) => col.show !== false);
-    if (visibleColumns.length > 0) {
-      const columnNames = visibleColumns.map((col: any) => col.title || col.key || col.label).join('、');
-      parts.push(`显示字段：${columnNames}`);
-      
-      // 排序配置
-      const sortedColumns = visibleColumns.filter((col: any) => col.sortable);
-      if (sortedColumns.length > 0) {
-        const sortNames = sortedColumns.map((col: any) => col.title || col.key || col.label).join('、');
-        parts.push(`可排序字段：${sortNames}`);
-      }
-    }
-  } else {
-    parts.push('显示字段：所有字段');
-  }
-  
-  // 分页配置
-  if (currentConfig.pagination && currentConfig.pagination.enabled === true) {
-    const pagination = currentConfig.pagination;
-    const pageSize = pagination.defaultPageSize || pagination.pageSize || 10;
-    parts.push(`分页显示：每页${pageSize}条记录`);
-    
-    if (pagination.showSizeChanger) {
-      parts.push(`支持切换每页条数`);
-    }
-    
-    if (pagination.showQuickJumper) {
-      parts.push(`支持快速跳转页码`);
-    }
-  }
-  
-  // 如果没有任何配置，显示默认信息
-  if (parts.length === 0) {
-    parts.push('暂无配置信息');
-    parts.push('请在左侧菜单中进行配置');
-  }
-  
-  return parts.join('\n');
-});
-
-const drawerTitle = computed(() => {
-  return props.currentViewName || config.value?.basic?.title || '表格'
-});
-
-// 获取当前视图名称
-const getCurrentViewName = () => {
-  const tableStore = useTableConfigStore()
-  const views = tableStore.getViews('default')
-  const currentViewKey = getCurrentViewKey() // 需要从父组件传入或通过其他方式获取
-  const currentView = views.find(v => v.key === currentViewKey)
-  return currentView?.label || config.value?.basic?.title || '表格'
-}
-
-// 编辑标题
-const editingTitle = ref(false);
-const tempTitle = ref('');
-
-// 编辑视图ID
-const editingViewKey = ref(false);
-const tempViewKey = ref('');
-
-const startEditTitle = () => {
-  editingTitle.value = true;
-  tempTitle.value = props.currentViewName || '表格';
-};
-
-const finishEditTitle = () => {
-  // 这里需要通过事件通知父组件更新视图名称
-  emit('update-view-name', tempTitle.value);
-  editingTitle.value = false;
-};
-
-const startEditViewKey = () => {
-  editingViewKey.value = true;
-  tempViewKey.value = viewKey.value;
-};
-
-const finishEditViewKey = () => {
-  // 这里需要通过事件通知父组件更新视图key
-  emit('update-view-key', tempViewKey.value);
-  editingViewKey.value = false;
-};
-
+/** 菜单分组配置 - 定义左侧菜单的结构和层次 */
 const menuGroups = [
   {
     key: 'basic-settings',
     title: '基础设置',
     items: [
-      { key: 'basic', label: '表格视图', component: BasicSettingsForm },
-      { key: 'pagination', label: '分页', component: PaginationSettingsForm },
+      { key: 'basic', label: '表格视图' },
+      { key: 'pagination', label: '分页' },
     ]
   },
   {
     key: 'structure',
     title: '结构分组',
     items: [
-      { key: 'columns', label: '列配置', component: FieldSettingsForm },
+      { key: 'columns', label: '列配置' },
     ]
   },
   {
     key: 'data-processing',
     title: '数据处理',
     items: [
-      { key: 'sort-filter', label: '排序', component: SortSettingsForm },
-      { key: 'data-filter', label: '数据过滤', component: DataFilterForm },
-      { key: 'data', label: '筛选设置', component: FilterListSettingsForm },
+      { key: 'sort-filter', label: '排序' },
+      { key: 'data-filter', label: '数据过滤' },
+      { key: 'data', label: '筛选设置' },
     ]
   }
 ];
 
-const allMenuItems = menuGroups.flatMap(group => group.items);
-
-const currentComponent = computed(() => {
-  const menu = allMenuItems.find((m) => m.key === activeMenu.value);
-  return menu?.component;
-});
-
-// 导出配置
-const exportConfig = () => {
-  const configData = JSON.stringify(config.value, null, 2);
-  const blob = new Blob([configData], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `table-config-${tableId.value}-${viewKey.value}-${Date.now()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  window.$message?.success('配置已导出');
+/** 组件映射表 - 菜单项对应的配置表单组件 */
+const components = {
+  basic: BasicSettingsForm,
+  pagination: PaginationSettingsForm,
+  columns: FieldSettingsForm,
+  'sort-filter': SortSettingsForm,
+  'data-filter': DataFilterForm,
+  data: FilterListSettingsForm
 };
 
-// 导入配置
+/** 获取配置描述 - 生成当前视图配置的JSON字符串 */
+const getConfigDescription = () => {
+  const config = props.viewConfig;
+  if (!config) return '视图配置为空';
+  return JSON.stringify(config, null, 2);
+};
+
+/** 开始编辑标题 - 进入标题编辑模式 */
+const startEditTitle = () => {
+  editingTitle.value = true;
+  tempTitle.value = props.currentViewName || '';
+};
+
+/** 完成编辑标题 - 退出标题编辑模式 */
+const finishEditTitle = () => {
+  editingTitle.value = false;
+  // 这里可以添加更新视图标题的逻辑
+};
+
+/** 开始编辑视图键名 - 进入视图键名编辑模式 */
+const startEditViewKey = () => {
+  editingViewKey.value = true;
+  tempViewKey.value = props.viewKey || props.viewConfig.key;
+};
+
+/** 完成编辑视图键名 - 退出视图键名编辑模式 */
+const finishEditViewKey = () => {
+  editingViewKey.value = false;
+  // 这里可以添加更新视图key的逻辑
+};
+
+/** 获取当前配置 - 根据激活的菜单项返回对应的配置 */
+const getCurrentConfig = () => {
+  const config = props.viewConfig;
+  if (!config) return {};
+  
+  switch (activeMenu.value) {
+    case 'basic':
+      return config.basic || {};
+    case 'pagination':
+      return config.pagination || {};
+    case 'columns':
+      return { fields: props.viewConfig?.columns || [], visibility: config.columnVisibility || {} };
+    case 'sort-filter':
+      return config.sort || {};
+    case 'data-filter':
+      return config.dataFilter || {};
+    case 'data':
+      return config.filterList || {};
+    default:
+      return {};
+  }
+};
+
+/** 处理配置变更 - 接收表单组件的配置变更事件 */
+const handleConfigChange = (newConfig: any) => {
+  // 根据当前激活的菜单项更新对应的配置
+  const updatedViewConfig = { ...toRaw(props.viewConfig) };
+
+  switch (activeMenu.value) {
+    case 'basic':
+      updatedViewConfig.basic = newConfig;
+      break;
+    case 'pagination':
+      updatedViewConfig.pagination = newConfig;
+      break;
+    case 'columns':
+      updatedViewConfig.columns = newConfig.fields;
+      updatedViewConfig.columnVisibility = newConfig.visibility;
+      break;
+    case 'sort-filter':
+      updatedViewConfig.sort = newConfig;
+      break;
+    case 'data-filter':
+      updatedViewConfig.dataFilter = newConfig;
+      break;
+    case 'data':
+      updatedViewConfig.filterList = newConfig;
+      break;
+  }
+  
+  // 发射配置更新事件
+  emit('config-updated', updatedViewConfig);
+};
+
+/** 导出配置 - 将当前视图配置导出为JSON文件 */
+const exportConfig = () => {
+  const config = props.viewConfig?.config;
+  if (!config) {
+    message.warning('当前视图配置为空');
+    return;
+  }
+  
+  const dataStr = JSON.stringify(config, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `view-config-${props.viewConfig.key}-${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  
+  URL.revokeObjectURL(url);
+  message.success('视图配置已导出');
+};
+
+/** 处理导入配置 - 解析并应用导入的JSON配置 */
 const handleImportConfig = () => {
   try {
-    const newConfig = JSON.parse(importConfigText.value);
-    // 更新配置，会自动保存到 store
-    config.value = newConfig;
-    showImportModal.value = false;
-    importConfigText.value = '';
-    window.$message?.success('配置导入成功');
-  } catch (error) {
-    window.$message?.error('JSON 格式错误，请检查配置文件');
-  }
-};
-
-// 获取完整配置描述
-const getFullConfigDescription = () => {
-  const parts: string[] = [];
-  
-  // 调试：显示配置对象结构
-  console.log('当前配置对象:', config.value);
-  
-  // 基础配置
-  if (config.value?.basic) {
-    const basic = config.value.basic;
-    parts.push(`查询表格"${basic.title || '数据表'}"`);
+    const config = JSON.parse(importConfigText.value);
     
-    if (basic.description) {
-      parts.push(`说明：${basic.description}`);
-    }
-  } else {
-    parts.push('查询表格"数据表"');
-  }
-  
-  // 列配置
-  if (config.value?.columns && Array.isArray(config.value.columns) && config.value.columns.length > 0) {
-    const visibleColumns = config.value.columns.filter((col: any) => col.show !== false);
-    if (visibleColumns.length > 0) {
-      const columnNames = visibleColumns.map((col: any) => col.title || col.key || col.label).join('、');
-      parts.push(`显示字段：${columnNames}`);
-      
-      // 排序配置
-      const sortedColumns = visibleColumns.filter((col: any) => col.sortable);
-      if (sortedColumns.length > 0) {
-        const sortNames = sortedColumns.map((col: any) => col.title || col.key || col.label).join('、');
-        parts.push(`可排序字段：${sortNames}`);
-      }
-    }
-  } else {
-    parts.push('显示字段：所有字段');
-  }
-  
-  // 数据过滤配置
-  if (config.value?.dataFilter?.groups && Array.isArray(config.value.dataFilter.groups)) {
-    const groups = config.value.dataFilter.groups;
-    const hasConditions = groups.some((g: any) => g.conditions && Array.isArray(g.conditions) && g.conditions.length > 0);
-    
-    if (hasConditions) {
-      parts.push('过滤条件：');
-      
-      const groupTexts = groups.map((group: any, groupIndex: number) => {
-        if (!group.conditions || !Array.isArray(group.conditions) || group.conditions.length === 0) return '';
-        
-        const conditionTexts = group.conditions.map((cond: any, index: number) => {
-          if (!cond.field || !cond.operator) return '';
-          
-          const field = cond.field;
-          const operator = getOperatorText(cond.operator);
-          const value = getValueText(cond);
-          
-          if (index === 0) {
-            return `${field}${operator}${value}`;
-          } else {
-            const prefix = cond.logic === 'OR' ? '或' : '且';
-            return `${prefix}${field}${operator}${value}`;
-          }
-        }).filter(text => text);
-        
-        if (conditionTexts.length === 0) return '';
-        
-        let groupText = conditionTexts.join('');
-        if (group.conditions.length > 1 && groupIndex > 0) {
-          groupText = `（${groupText}）`;
-        }
-        
-        return groupText;
-      }).filter(text => text);
-      
-      if (groupTexts.length > 0) {
-        if (groupTexts.length === 1) {
-          parts.push(`  当${groupTexts[0]}`);
-        } else {
-          let result = `  当${groupTexts[0]}`;
-          for (let i = 1; i < groupTexts.length; i++) {
-            const prevGroup = groups[i - 1];
-            const groupLogic = (prevGroup.groupLogic || 'AND') === 'AND' ? '且' : '或';
-            result += `${groupLogic}${groupTexts[i]}`;
-          }
-          parts.push(result);
-        }
-      }
-    }
-  }
-  
-  // 筛选器配置
-  if (config.value?.filters && Array.isArray(config.value.filters) && config.value.filters.length > 0) {
-    const activeFilters = config.value.filters.filter((f: any) => f.show !== false);
-    if (activeFilters.length > 0) {
-      const filterNames = activeFilters.map((f: any) => f.label || f.key || f.title).join('、');
-      parts.push(`筛选器：${filterNames}`);
-    }
-  }
-  
-  // 分页配置
-  if (config.value?.pagination) {
-    const pagination = config.value.pagination;
-    if (pagination.show !== false) {
-      const pageSize = pagination.pageSize || pagination.size || 10;
-      parts.push(`分页显示：每页${pageSize}条记录`);
-      
-      if (pagination.showSizeChanger) {
-        parts.push(`支持切换每页条数`);
-      }
-      
-      if (pagination.showQuickJumper) {
-        parts.push(`支持快速跳转页码`);
-      }
-    }
-  }
-  
-  // 操作配置
-  if (config.value?.actions && Array.isArray(config.value.actions) && config.value.actions.length > 0) {
-    const actionNames = config.value.actions.map((a: any) => a.label || a.key || a.title).join('、');
-    parts.push(`操作功能：${actionNames}`);
-  }
-  
-  // 生成类似SQL的描述
-  const sqlLikeDescription = generateSQLLikeDescription();
-  if (sqlLikeDescription) {
-    parts.push('');
-    parts.push('等效查询语句：');
-    parts.push(sqlLikeDescription);
-  }
-  
-  // 如果没有任何配置，显示默认信息
-  if (parts.length === 0) {
-    parts.push('暂无配置信息');
-    parts.push('请在左侧菜单中进行配置');
-  }
-  
-  return parts.join('\n');
-};
-
-// 生成类似SQL的描述
-const generateSQLLikeDescription = () => {
-  const tableName = config.value.basic?.title || 'table';
-  
-  // SELECT 部分
-  let selectPart = 'SELECT ';
-  if (config.value.columns && config.value.columns.length > 0) {
-    const visibleColumns = config.value.columns.filter((col: any) => col.show !== false);
-    if (visibleColumns.length > 0) {
-      selectPart += visibleColumns.map((col: any) => col.key).join(', ');
+    if (props.viewConfig?.config) {
+      Object.assign(props.viewConfig.config, config);
+      message.success('配置导入成功');
+      showImportModal.value = false;
+      importConfigText.value = '';
+      emit('config-updated');
     } else {
-      selectPart += '*';
+      message.error('视图配置不存在');
     }
-  } else {
-    selectPart += '*';
-  }
-  
-  // FROM 部分
-  const fromPart = `FROM ${tableName}`;
-  
-  // WHERE 部分
-  let wherePart = '';
-  if (config.value.dataFilter && config.value.dataFilter.groups) {
-    const groups = config.value.dataFilter.groups;
-    const hasConditions = groups.some((g: any) => g.conditions && g.conditions.length > 0);
-    
-    if (hasConditions) {
-      const whereConditions: string[] = [];
-      
-      groups.forEach((group: any, groupIndex: number) => {
-        if (!group.conditions || group.conditions.length === 0) return;
-        
-        const groupConditions = group.conditions
-          .filter((cond: any) => cond.field && cond.operator)
-          .map((cond: any, index: number) => {
-            const field = cond.field;
-            const operator = getSQLOperator(cond.operator);
-            const value = getSQLValue(cond);
-            
-            let conditionStr = `${field} ${operator} ${value}`;
-            
-            if (index > 0) {
-              const logic = cond.logic === 'OR' ? 'OR' : 'AND';
-              conditionStr = `${logic} ${conditionStr}`;
-            }
-            
-            return conditionStr;
-          });
-        
-        if (groupConditions.length > 0) {
-          let groupStr = groupConditions.join(' ');
-          
-          if (group.conditions.length > 1 && whereConditions.length > 0) {
-            groupStr = `(${groupStr})`;
-          }
-          
-          if (whereConditions.length > 0) {
-            const prevGroup = groups[groupIndex - 1];
-            const groupLogic = (prevGroup?.groupLogic || 'AND') === 'AND' ? 'AND' : 'OR';
-            groupStr = `${groupLogic} ${groupStr}`;
-          }
-          
-          whereConditions.push(groupStr);
-        }
-      });
-      
-      if (whereConditions.length > 0) {
-        wherePart = `WHERE ${whereConditions.join(' ')}`;
-      }
-    }
-  }
-  
-  // ORDER BY 部分
-  let orderPart = '';
-  if (config.value.columns) {
-    const sortedColumns = config.value.columns.filter((col: any) => col.defaultSort);
-    if (sortedColumns.length > 0) {
-      const orderItems = sortedColumns.map((col: any) => {
-        const direction = col.defaultSort === 'desc' ? 'DESC' : 'ASC';
-        return `${col.key} ${direction}`;
-      });
-      orderPart = `ORDER BY ${orderItems.join(', ')}`;
-    }
-  }
-  
-  // LIMIT 部分
-  let limitPart = '';
-  if (config.value.pagination && config.value.pagination.show !== false) {
-    const pageSize = config.value.pagination.pageSize || 10;
-    limitPart = `LIMIT ${pageSize}`;
-  }
-  
-  // 组合SQL
-  const sqlParts = [selectPart, fromPart, wherePart, orderPart, limitPart].filter(part => part);
-  return sqlParts.join('\n');
-};
-
-// 获取SQL操作符
-const getSQLOperator = (operator: string) => {
-  const operatorMap: Record<string, string> = {
-    'eq': '=',
-    'ne': '!=',
-    'gt': '>',
-    'lt': '<',
-    'gte': '>=',
-    'lte': '<=',
-    'contains': 'LIKE',
-    'not_contains': 'NOT LIKE',
-    'is': '=',
-    'is_not': '!=',
-    'between': 'BETWEEN',
-    'not_between': 'NOT BETWEEN'
-  };
-  return operatorMap[operator] || '=';
-};
-
-// 获取SQL值
-const getSQLValue = (condition: any) => {
-  if (condition.operator === 'contains' || condition.operator === 'not_contains') {
-    return `'%${condition.value || ''}%'`;
-  }
-  
-  if (condition.operator === 'between' || condition.operator === 'not_between') {
-    const min = condition.minValue || 0;
-    const max = condition.maxValue || 0;
-    return `${min} AND ${max}`;
-  }
-  
-  const value = condition.value || '';
-  if (typeof value === 'string') {
-    return `'${value}'`;
-  }
-  
-  return value;
-};
-
-// 获取操作符文本（复用DataFilterForm的方法）
-const getOperatorText = (operator: string) => {
-  const operatorMap: Record<string, string> = {
-    'eq': '等于',
-    'ne': '不等于', 
-    'contains': '包含',
-    'not_contains': '不包含',
-    'is': '是',
-    'is_not': '不是',
-    'gt': '大于',
-    'lt': '小于',
-    'gte': '≥',
-    'lte': '≤',
-    'between': '在范围',
-    'not_between': '不在范围'
-  };
-  return operatorMap[operator] || operator;
-};
-
-// 获取值文本（复用DataFilterForm的方法）
-const getValueText = (condition: any) => {
-  if (['between', 'not_between'].includes(condition.operator)) {
-    const min = condition.minValue || '最小值';
-    const max = condition.maxValue || '最大值';
-    return `${min}-${max}`;
-  }
-  return condition.value || '值';
-};
-
-// 复制配置描述
-const copyConfigDescription = async () => {
-  try {
-    await navigator.clipboard.writeText(getFullConfigDescription());
-    window.$message?.success('配置描述已复制到剪贴板');
   } catch (error) {
-    window.$message?.error('复制失败，请手动复制');
+    message.error('配置格式错误，请检查JSON格式');
   }
+};
+
+/** 复制配置描述 - 将配置描述文本复制到剪贴板 */
+const copyConfigDescription = () => {
+  navigator.clipboard.writeText(getConfigDescription()).then(() => {
+    message.success('配置描述已复制');
+  }).catch(() => {
+    message.error('复制失败');
+  });
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@use '../styles/utilities.scss' as *;
+
 .config-panel {
   display: flex;
   height: 100%;
-  background: white;
+  
+  .menu-sidebar {
+    width: 160px;
+    background: #f8f9fa;
+    border-right: 1px solid $color-border;
+    display: flex;
+    flex-direction: column;
+    
+    .menu-groups {
+      flex: 1;
+      
+      .menu-group {
+        .group-title {
+          padding: $spacing-sm $spacing-md;
+          font-size: 11px;
+          font-weight: 600;
+          color: $color-text-muted;
+          text-transform: uppercase;
+          background: #e9ecef;
+          border-bottom: 1px solid $color-border;
+        }
+        
+        .menu-items {
+          .menu-item {
+            padding: $spacing-md $spacing-lg;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid $color-border;
+            
+            &:hover {
+              background: #e9ecef;
+            }
+            
+            &.active {
+              background: white;
+              color: $color-primary;
+              border-right: 2px solid $color-primary;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  .content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    
+    .content-body {
+      flex: 1;
+      padding: $spacing-xl;
+      overflow-y: auto;
+      
+      .form-section {
+        margin-bottom: $spacing-2xl;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+    
+    .content-footer {
+      padding: $spacing-lg;
+      border-top: 1px solid $color-border;
+      background: #f8f9fa;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+  }
 }
 
-.menu-sidebar {
-  width: 192px;
-  background: #f8f9fa;
-  border-right: 1px solid #e5e7eb;
-  padding: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.menu-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.menu-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.group-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0 12px;
-}
-
-.menu-items {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.menu-item {
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.menu-item:hover {
-  background: #e5e7eb;
-}
-
-.menu-item.active {
-  color: #2563eb;
-  background: #dbeafe;
-}
-
-.content-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.content-body {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-}
-
-.content-footer {
-  padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
-  background: #f8f9fa;
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.config-modal-content {
-  max-height: 400px;
-  overflow-y: auto;
-  white-space: pre-line;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
+// 响应式设计
+@media (max-width: $breakpoint-tablet) {
+  .config-panel {
+    flex-direction: column;
+    
+    .sidebar {
+      width: 100%;
+      flex-direction: row;
+      overflow-x: auto;
+      
+      .nav-item {
+        white-space: nowrap;
+        border-right: 1px solid $color-border;
+        border-bottom: none;
+        
+        &.active {
+          border-right: 1px solid $color-border;
+          border-bottom: 2px solid $color-primary;
+        }
+      }
+    }
+    
+    .content {
+      padding: $spacing-lg;
+    }
+  }
 }
 </style>

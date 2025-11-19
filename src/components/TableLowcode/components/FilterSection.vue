@@ -1,298 +1,285 @@
 <template>
-  <div v-if="shouldShowFilters" class="filter-section">
+  <div v-if="hasFilters" class="filter-section">
+    <!-- 基础筛选 -->
     <div class="filter-container">
-      <!-- 基础筛选 - 显示所有字段 -->
-      <template v-for="field in filterBarFields" :key="field.key">
-        <FilterInput 
-          v-if="field.filterType === 'input'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterNumber 
-          v-else-if="field.filterType === 'number'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterDate 
-          v-else-if="field.filterType === 'date'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterDateRange 
-          v-else-if="field.filterType === 'daterange'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterSelect 
-          v-else-if="field.filterType === 'select'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterCheckbox 
-          v-else-if="field.filterType === 'checkbox'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterRadio 
-          v-else-if="field.filterType === 'radio'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-        <FilterSwitch 
-          v-else-if="field.filterType === 'switch'"
-          :config="field"
-          @update="handleFilterUpdate"
-        />
-      </template>
-    </div>
-
-    <!-- 操作区域 -->
-    <div class="filter-actions">
-      <!-- 高级筛选按钮 -->
-      <n-button 
-        v-if="advancedFilterFields && advancedFilterFields.length > 0"
-        size="small" 
-        @click="showAdvanced = true"
-      >
-        <template #icon>
-          <n-icon>
-            <svg viewBox="0 0 24 24">
-              <path fill="currentColor" d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
-            </svg>
-          </n-icon>
-        </template>
-        高级筛选
-      </n-button>
+      <FilterRenderer 
+        v-for="field in basicFilters" 
+        :key="field.key"
+        :config="field"
+        :value="filterValues[field.key]"
+        @update="updateFilter"
+      />
       
-      <n-button size="small" type="primary" @click="$emit('search')">
-        搜索
-      </n-button>
-      <n-button size="small" @click="$emit('reset')">
-        重置
-      </n-button>
+      <!-- 操作按钮 -->
+      <div class="filter-actions">
+        <n-button type="primary" size="small" @click="handleSearch" :loading="isSearching">
+          搜索
+        </n-button>
+        <n-button size="small" @click="handleReset">重置</n-button>
+        <n-button 
+          v-if="hasAdvancedFilters"
+          size="small" 
+          @click="toggleAdvanced"
+          :type="showAdvanced ? 'primary' : 'default'"
+        >
+          高级筛选
+          <n-badge v-if="advancedFilterCount > 0" :value="advancedFilterCount" />
+        </n-button>
+      </div>
     </div>
 
-    <!-- 高级筛选抽屉 -->
-    <n-drawer 
-      v-model:show="showAdvanced" 
-      :width="360"
-      placement="right"
-    >
-      <n-drawer-content>
-        <template #header>
-          <div class="drawer-header">
-            <n-icon size="18" style="color: #1890ff;">
-              <svg viewBox="0 0 24 24">
-                <path fill="currentColor" d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
-              </svg>
-            </n-icon>
-            <span style="font-weight: 600; font-size: 16px;">高级筛选</span>
-          </div>
-        </template>
+    <!-- 高级筛选面板 -->
+    <div v-if="showAdvanced" class="advanced-filter-panel">
+      <n-divider>高级筛选</n-divider>
+      <div class="advanced-filter-container">
+        <FilterRenderer 
+          v-for="field in advancedFilters" 
+          :key="field.key"
+          :config="field"
+          :value="filterValues[field.key]"
+          @update="updateFilter"
+        />
+      </div>
+      <div class="advanced-filter-actions">
+        <n-button type="primary" size="small" @click="handleAdvancedSearch" :loading="isSearching">
+          应用筛选
+        </n-button>
+        <n-button size="small" @click="handleAdvancedReset">清空筛选</n-button>
+        <n-button size="small" @click="saveAsPreset">保存预设</n-button>
+      </div>
+    </div>
 
-        <div class="advanced-content">
-          <div class="filter-grid">
-            <template v-for="field in advancedFilterFields" :key="field.key">
-              <div class="filter-item">
-                <FilterInput 
-                  v-if="field.filterType === 'input'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterNumber 
-                  v-else-if="field.filterType === 'number'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterDate 
-                  v-else-if="field.filterType === 'date'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterDateRange 
-                  v-else-if="field.filterType === 'daterange'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterSelect 
-                  v-else-if="field.filterType === 'select'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterCheckbox 
-                  v-else-if="field.filterType === 'checkbox'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterRadio 
-                  v-else-if="field.filterType === 'radio'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-                <FilterSwitch 
-                  v-else-if="field.filterType === 'switch'"
-                  :config="field"
-                  @update="handleFilterUpdate"
-                />
-              </div>
-            </template>
-          </div>
-        </div>
-        
-        <template #footer>
-          <div class="drawer-footer">
-            <n-button quaternary @click="$emit('advanced-reset')">
-              <template #icon>
-                <n-icon>
-                  <svg viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
-                  </svg>
-                </n-icon>
-              </template>
-              重置
-            </n-button>
-            <n-button type="primary" @click="handleAdvancedSearch">
-              <template #icon>
-                <n-icon>
-                  <svg viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                  </svg>
-                </n-icon>
-              </template>
-              应用筛选
-            </n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+    <!-- 筛选预设 -->
+    <div v-if="filterPresets.length > 0" class="filter-presets">
+      <n-divider>筛选预设</n-divider>
+      <n-space size="small">
+        <n-tag 
+          v-for="preset in filterPresets" 
+          :key="preset.id"
+          :type="preset.active ? 'primary' : 'default'"
+          closable
+          @click="applyPreset(preset)"
+          @close="removePreset(preset)"
+        >
+          {{ preset.name }}
+        </n-tag>
+      </n-space>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import FilterInput from '../filters/FilterInput.vue'
-import FilterNumber from '../filters/FilterNumber.vue'
-import FilterDate from '../filters/FilterDate.vue'
-import FilterDateRange from '../filters/FilterDateRange.vue'
-import FilterSelect from '../filters/FilterSelect.vue'
-import FilterCheckbox from '../filters/FilterCheckbox.vue'
-import FilterRadio from '../filters/FilterRadio.vue'
-import FilterSwitch from '../filters/FilterSwitch.vue'
+import FilterRenderer from './FilterRenderer.vue'
+import type { FilterListConfig } from '../types'
+import { msg } from '../utils/message'
 
-interface Props {
-  visible?: boolean
-  filterBarFields: any[]
-  advancedFilterFields?: any[]
-  filterValues?: Record<string, any>
-  advancedFilterCount?: number
-  showAdvanced?: boolean
-}
+// ==================== 组件定义 ====================
 
-const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  'update-filter': [key: string, value: any]
-  search: []
-  reset: []
-  'show-advanced': []
-  'update-advanced': [value: boolean]
-  'advanced-search': []
-  'advanced-reset': []
+const props = defineProps<{
+   config?: FilterListConfig
 }>()
 
+const emit = defineEmits<{
+  search: [filters: Record<string, any>]
+  reset: []
+}>()
+
+// ==================== 筛选管理状态 ====================
+
+const filterValues = ref<Record<string, any>>({})
+const filterPresets = ref<any[]>([])
+const isSearching = ref(false)
 const showAdvanced = ref(false)
 
-const shouldShowFilters = computed(() => {
-  const hasBasicFilters = props.filterBarFields.length > 0
-  const hasAdvancedFilters = props.advancedFilterFields && props.advancedFilterFields.length > 0
-  
-  console.log('FilterSection 筛选显示判断:')
-  console.log('- 基础筛选字段:', props.filterBarFields)
-  console.log('- 高级筛选字段:', props.advancedFilterFields)
-  console.log('- 是否显示:', hasBasicFilters || hasAdvancedFilters)
-  
-  return hasBasicFilters || hasAdvancedFilters
-})
+// ==================== 基础操作 ====================
 
-const handleFilterUpdate = (key: string, value: any) => {
-  emit('update-filter', key, value)
+const updateFilter = (key: string, value: any) => {
+  filterValues.value[key] = value
+}
+
+const resetFilters = (fields?: string[]) => {
+  if (fields) {
+    fields.forEach(key => {
+      filterValues.value[key] = null
+    })
+  } else {
+    Object.keys(filterValues.value).forEach(key => {
+      filterValues.value[key] = null
+    })
+  }
+}
+
+const getActiveFilters = () => {
+  return Object.entries(filterValues.value)
+    .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+    .reduce((acc, [key, value]) => {
+      acc[key] = value
+      return acc
+    }, {} as Record<string, any>)
+}
+
+// ==================== 搜索操作 ====================
+
+const handleSearch = () => {
+  isSearching.value = true
+  
+  setTimeout(() => {
+    isSearching.value = false
+    msg.success('搜索完成')
+    emit('search', filterValues.value)
+  }, 500)
+}
+
+const handleReset = () => {
+  resetFilters()
+  msg.success('已重置筛选条件')
+  emit('reset')
 }
 
 const handleAdvancedSearch = () => {
-  emit('advanced-search')
+  handleSearch()
   showAdvanced.value = false
 }
+
+const handleAdvancedReset = () => {
+  const advancedFieldKeys = advancedFilters.value.map(f => f.key)
+  resetFilters(advancedFieldKeys)
+  msg.success('已清空高级筛选')
+}
+
+const toggleAdvanced = () => {
+  showAdvanced.value = !showAdvanced.value
+}
+
+// ==================== 预设管理 ====================
+
+const saveAsPreset = () => {
+  const activeFilters = getActiveFilters()
+  
+  if (Object.keys(activeFilters).length === 0) {
+    msg.warning('请先设置筛选条件')
+    return
+  }
+
+  const presetName = `筛选预设 ${filterPresets.value.length + 1}`
+  const preset = {
+    id: Date.now(),
+    name: presetName,
+    filters: { ...activeFilters },
+    active: false,
+    createTime: new Date().toISOString()
+  }
+  
+  filterPresets.value.push(preset)
+  msg.success(`已保存筛选预设：${presetName}`)
+}
+
+const applyPreset = (preset: any) => {
+  resetFilters()
+  Object.assign(filterValues.value, preset.filters)
+  
+  filterPresets.value.forEach(p => p.active = false)
+  preset.active = true
+  
+  msg.success(`已应用筛选预设：${preset.name}`)
+  handleSearch()
+}
+
+const removePreset = (preset: any) => {
+  const index = filterPresets.value.findIndex(p => p.id === preset.id)
+  if (index > -1) {
+    filterPresets.value.splice(index, 1)
+    msg.success(`已删除筛选预设：${preset.name}`)
+  }
+}
+
+// ==================== 计算属性 ====================
+
+const hasFilters = computed(() => 
+  props.config?.filters && props.config.filters.length > 0
+)
+
+const basicFilters = computed(() => 
+  props.config?.filters?.filter(f => f.position === 'basic' || f.position === 'both') || []
+)
+
+const advancedFilters = computed(() => 
+  props.config?.filters?.filter(f => f.position === 'advanced' || f.position === 'both') || []
+)
+
+const hasAdvancedFilters = computed(() => advancedFilters.value.length > 0)
+
+const advancedFilterCount = computed(() => {
+  return advancedFilters.value.reduce((count, field) => {
+    const value = filterValues.value[field.key]
+    if (value !== null && value !== undefined && value !== '') {
+      return count + 1
+    }
+    return count
+  }, 0)
+})
 </script>
 
 <style scoped>
 .filter-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  align-items: center;
-  padding: 12px;
-  background: #fafbfc;
-  border-radius: 6px;
-  border: 1px solid #e8e8e8;
-  margin-bottom: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 .filter-container {
-  display: contents;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
 }
 
 .filter-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-left: auto;
 }
 
-.drawer-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.advanced-filter-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
 }
 
-.advanced-content {
-  padding: 0;
-}
-
-.filter-grid {
-  display: flex;
-  flex-direction: column;
+.advanced-filter-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+  margin-bottom: 16px;
 }
 
-.filter-item {
-  width: 100%;
-}
-
-.filter-item :deep(.filter-input),
-.filter-item :deep(.filter-select),
-.filter-item :deep(.filter-number),
-.filter-item :deep(.filter-date),
-.filter-item :deep(.filter-date-range),
-.filter-item :deep(.filter-checkbox),
-.filter-item :deep(.filter-radio),
-.filter-item :deep(.filter-switch) {
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  gap: 6px;
-}
-
-.filter-item :deep(.filter-label) {
-  text-align: left;
-  min-width: auto;
-  width: 100%;
-  font-weight: 500;
-}
-
-.drawer-footer {
+.advanced-filter-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: flex-end;
-  padding: 16px 0 0 0;
-  border-top: 1px solid #f0f0f0;
+}
+
+.filter-presets {
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .filter-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-actions {
+    margin-left: 0;
+    justify-content: center;
+  }
+  
+  .advanced-filter-container {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -241,7 +241,7 @@
           }
           if (isFunction(editRule)) {
             const res = await editRule(currentValue, record as Recordable);
-            if (!!res) {
+            if (res) {
               ruleMessage.value = res;
               ruleVisible.value = true;
               return false;
