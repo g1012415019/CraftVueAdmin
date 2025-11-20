@@ -167,8 +167,9 @@
             </div>
             
             <!-- 编辑面板 -->
-            <div v-if="editingField === field.key" class="field-edit-panel" @click.stop>
-              <div class="edit-grid">
+            <n-collapse-transition :show="editingField === field.key">
+              <div class="field-edit-panel" @click.stop>
+                <div class="edit-grid">
                 <div class="edit-item">
                   <span class="edit-label">筛选类型</span>
                   <n-select
@@ -249,7 +250,8 @@
                   />
                 </div>
               </div>
-            </div>
+              </div>
+            </n-collapse-transition>
           </div>
         </div>
       </div>
@@ -455,7 +457,11 @@ const batchSetFilterType = (filterType: string) => {
 
 // 切换编辑状态
 const toggleEdit = (fieldKey: string) => {
-  editingField.value = editingField.value === fieldKey ? null : fieldKey
+  if (editingField.value === fieldKey) {
+    editingField.value = null
+  } else {
+    editingField.value = fieldKey
+  }
 }
 
 // 拖拽功能
