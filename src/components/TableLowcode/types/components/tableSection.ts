@@ -5,39 +5,30 @@
 
 /** 基础配置接口 */
 export interface BasicConfig {
-  // 行高设置
-  /** 行高：紧凑、中等、高、超高 */
+  /** 行高设置 */
   rowHeight?: 'compact' | 'medium' | 'large' | 'extra-large'
-  
-  // 显示设置
-  /** 显示序号 */
+  /** 显示序号列 */
   showIndex?: boolean
   /** 显示记录快捷方式 */
   showRecordShortcut?: boolean
   /** 显示汇总行 */
   showSummaryRow?: boolean
-  /** 显示垂直表格线 */
+  /** 显示垂直分隔线 */
   showVerticalLines?: boolean
-  /** 显示交替行颜色 */
+  /** 显示行交替色 */
   showAlternateRowColors?: boolean
-  /** 标题行文字换行 */
+  /** 标题自动换行 */
   headerTextWrap?: boolean
-  
-  // 表格交互方式
-  /** 交互模式：经典模式、点整行打开记录、电子表格模式 */
-  interactionMode?: 'classic' | 'row-click' | 'spreadsheet'
-  
-  // 更多设置
-  /** 允许行内编辑 */
+  /** 交互模式 */
+  interactionMode?: 'classic' | 'spreadsheet'
+  /** 启用行内编辑 */
   allowInlineEdit?: boolean
-  
-  // 自动刷新
-  /** 自动刷新开关 */
+  /** 自动刷新数据 */
   autoRefresh?: boolean
   /** 自动刷新间隔（秒） */
   autoRefreshInterval?: number
   
-  // 兼容旧配置
+  // 兼容属性
   /** 是否显示边框 */
   bordered?: boolean
   /** 是否显示斑马纹 */
@@ -46,8 +37,6 @@ export interface BasicConfig {
   loading?: boolean
   /** 表格尺寸 */
   size?: 'small' | 'medium' | 'large'
-  /** 行高密度 */
-  density?: 'compact' | 'default' | 'comfortable'
   /** 是否悬停高亮 */
   hoverable?: boolean
   /** 空状态提示文本 */

@@ -1,15 +1,23 @@
 /**
  * TableLowcode 组件类型定义统一导出
  * 
- * 完全按照组件目录层次组织类型定义，一一对应：
- * - components/ 目录对应各组件配置
- * - table/ 目录对应表格相关配置  
- * - filters/ 目录对应筛选器组件
- * - config/ 目录对应配置表单
- * - external 组合所有类型
+ * 按功能模块组织类型定义：
+ * - 基础类型：表格列、数据等
+ * - 组件类型：各功能组件配置
+ * - 配置类型：配置表单相关
+ * - 筛选类型：筛选器相关
+ * - 外部接口：对外暴露的接口
  */
 
-// 组件类型 - 对应 components/ 目录
+// ==================== 基础类型 ====================
+export type { TableColumn } from './table/column'
+export type { DataTableSortConfig } from './table/dataTable'
+export type { 
+  ColumnHeaderDropdownConfig, 
+  FloatingActionBarConfig 
+} from './table/components'
+
+// ==================== 组件类型 ====================
 export type { ActionBarConfig } from './components/actionBar'
 export type { PaginationConfig } from './components/pagination'
 export type { FilterListConfig } from './components/filterSection'
@@ -21,15 +29,31 @@ export type {
   ViewContextMenuConfig 
 } from './components/viewManager'
 
-// 表格类型 - 对应 Table/ 目录
-export type { TableColumn } from './table/column'
-export type { DataTableSortConfig } from './table/dataTable'
+// ==================== 配置类型 ====================
 export type { 
-  ColumnHeaderDropdownConfig, 
-  FloatingActionBarConfig 
-} from './table/components'
+  BasicSettingsConfig,
+  PaginationSettingsConfig,
+  FieldSettingsConfig,
+  ConfigPanelProps 
+} from './config/forms'
 
-// 筛选器类型 - 对应 filters/ 目录
+// 数据过滤配置
+export type { 
+  DataFilterConfig,
+  FilterCondition,
+  FilterGroup
+} from './config/dataFilter'
+
+// 排序配置
+export type { 
+  SortConfig,
+  SortableField
+} from './config/sortSettings'
+
+// 筛选列表配置
+export type { FilterListSettingsConfig } from './config/filterListSettings'
+
+// ==================== 筛选器类型 ====================
 export type { FilterConfig } from './filters/filter'
 export type { 
   FilterBaseConfig,
@@ -44,19 +68,5 @@ export type {
   FilterComponentConfig
 } from './filters'
 
-// 配置类型 - 对应 Config/ 目录
-export type { 
-  DataFilterConfig,
-  FilterCondition,
-  FilterGroup,
-  SortConfig,
-  SortableField,
-  BasicSettingsConfig,
-  PaginationSettingsConfig,
-  FilterListSettingsConfig,
-  FieldSettingsConfig,
-  ConfigPanelProps 
-} from './config/forms'
-
-// 外部接口
+// ==================== 外部接口 ====================
 export type { ExternalConfig, FeatureConfig } from './external'
