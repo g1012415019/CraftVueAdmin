@@ -7,6 +7,7 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
+    2: typeof import('./src/components/TableLowcode/Config/forms/FieldSettingsForm copy 2.vue')['default']
     ActionBar: typeof import('./src/components/TableLowcode/components/ActionBar.vue')['default']
     Application: typeof import('./src/components/Application/Application.vue')['default']
     BasicForm: typeof import('./src/components/Form/src/BasicForm.vue')['default']
@@ -27,7 +28,6 @@ declare module '@vue/runtime-core' {
     FilterDateRange: typeof import('./src/components/TableLowcode/filters/FilterDateRange.vue')['default']
     FilterInput: typeof import('./src/components/TableLowcode/filters/FilterInput.vue')['default']
     FilterListSettingsForm: typeof import('./src/components/TableLowcode/Config/forms/FilterListSettingsForm.vue')['default']
-    'FilterListSettingsForm copy': typeof import('./src/components/TableLowcode/Config/forms/FilterListSettingsForm copy.vue')['default']
     FilterNumber: typeof import('./src/components/TableLowcode/filters/FilterNumber.vue')['default']
     FilterRadio: typeof import('./src/components/TableLowcode/filters/FilterRadio.vue')['default']
     FilterRenderer: typeof import('./src/components/TableLowcode/components/FilterRenderer.vue')['default']
