@@ -4,7 +4,7 @@
       <template #header>
         <div class="drawer-header">
           <div class="title-section">
-            <div @dblclick="startEditTitle" style="cursor: pointer;">
+            <div @mouseenter="startEditTitle" @mouseleave="stopEditTitle" style="cursor: pointer; margin-bottom: 4px;">
               <n-input
                 v-if="editingTitle"
                 v-model:value="tempTitle"
@@ -15,30 +15,23 @@
                 autofocus
                 style="width: 200px;"
               />
-              <span v-else>配置面板 - {{ props.currentViewName || '默认视图' }}</span>
+              <span v-else style="font-size: 16px; font-weight: 500;">{{ props.currentViewName || '默认视图' }}</span>
             </div>
-            <div class="view-info">
-              <n-text depth="3" style="font-size: 11px;">
-                视图ID: 
-                <span @dblclick="startEditViewKey" style="cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                  <n-input
-                    v-if="editingViewKey"
-                    v-model:value="tempViewKey"
-                    size="tiny"
-                    @blur="finishEditViewKey"
-                    @keyup.enter="finishEditViewKey"
-                    @click.stop
-                    autofocus
-                    style="width: 180px;"
-                  />
-                  <template v-else>
-                    {{ props.viewKey || props.viewConfig.key }}
-                    <n-icon size="12" style="opacity: 0.6;">
-                      <EditIcon />
-                    </n-icon>
-                  </template>
-                </span>
-              </n-text>
+            <div style="font-size: 12px; color: #999;">
+              视图ID: 
+              <span @mouseenter="startEditViewKey" @mouseleave="stopEditViewKey" @click.stop style="cursor: pointer; color: #666;">
+                <n-input
+                  v-if="editingViewKey"
+                  v-model:value="tempViewKey"
+                  size="tiny"
+                  @blur="finishEditViewKey"
+                  @keyup.enter="finishEditViewKey"
+                  @click.stop
+                  autofocus
+                  style="width: 120px;"
+                />
+                <span v-else>{{ props.viewKey || props.viewConfig.key }}</span>
+              </span>
             </div>
           </div>
 
@@ -215,10 +208,22 @@ const startEditTitle = () => {
   tempTitle.value = props.currentViewName || '';
 };
 
+/** 停止编辑标题 */
+const stopEditTitle = () => {
+  if (!editingTitle.value) return;
+  finishEditTitle();
+};
+
 /** 完成编辑标题 - 退出标题编辑模式 */
 const finishEditTitle = () => {
   editingTitle.value = false;
-  // 这里可以添加更新视图标题的逻辑
+  if (tempTitle.value.trim() && tempTitle.value !== props.currentViewName) {
+    // 发射标题更新事件
+    emit('config-updated', { 
+      ...props.viewConfig, 
+      name: tempTitle.value.trim() 
+    });
+  }
 };
 
 /** 开始编辑视图键名 - 进入视图键名编辑模式 */
@@ -227,10 +232,22 @@ const startEditViewKey = () => {
   tempViewKey.value = props.viewKey || props.viewConfig.key;
 };
 
+/** 停止编辑视图键名 */
+const stopEditViewKey = () => {
+  if (!editingViewKey.value) return;
+  finishEditViewKey();
+};
+
 /** 完成编辑视图键名 - 退出视图键名编辑模式 */
 const finishEditViewKey = () => {
   editingViewKey.value = false;
-  // 这里可以添加更新视图key的逻辑
+  if (tempViewKey.value.trim() && tempViewKey.value !== (props.viewKey || props.viewConfig.key)) {
+    // 发射视图键名更新事件
+    emit('config-updated', { 
+      ...props.viewConfig, 
+      key: tempViewKey.value.trim() 
+    });
+  }
 };
 
 /** 获取当前配置 - 根据激活的菜单项返回对应的配置 */
@@ -330,6 +347,12 @@ const handleImportConfig = () => {
 
 <style lang="scss" scoped>
 @use '../styles/utilities.scss' as *;
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 .config-panel {
   display: flex;

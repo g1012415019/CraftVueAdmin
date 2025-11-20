@@ -1,175 +1,205 @@
 <template>
   <div class="field-settings">
     <div class="section-header">
-      <n-text class="section-title">字段管理</n-text>
+      <n-text class="section-title">字段配置</n-text>
       <n-text depth="3">配置表格列的显示、宽度、对齐等属性</n-text>
     </div>
 
-    <!-- 批量操作 -->
-    <div class="batch-actions">
-      <n-space>
-        <n-checkbox 
-          :checked="isAllSelected"
-          :indeterminate="isIndeterminate"
-          @update:checked="handleSelectAll"
-          size="small"
-        >
-          全选
-        </n-checkbox>
-        <n-select
-          v-model:value="batchAction"
-          size="small"
-          style="width: 120px;"
-          placeholder="批量操作"
-          :options="batchActionOptions"
-          @update:value="handleBatchAction"
-          :disabled="selectedFieldsCount === 0"
-        />
-        <n-text depth="3" style="font-size: 12px;">
-          已显示 {{ visibleFieldsCount }} / {{ fieldList.length }} 个字段
-        </n-text>
-      </n-space>
+    <div class="help-section">
+      <div class="help-item">
+        <strong>字段管理：</strong>拖拽调整字段顺序，设置显示、宽度、对齐等属性
+      </div>
+      <div class="help-item">
+        <strong>批量操作：</strong>选中多个字段后可批量设置显示状态和属性
+      </div>
     </div>
 
-    <!-- 搜索框 -->
-    <div class="search-section">
-      <n-input
-        v-model:value="searchKeyword"
-        placeholder="输入字段名称搜索"
-        size="small"
-        clearable
-      >
-        <template #prefix>
-          <n-icon>
-            <svg viewBox="0 0 24 24">
-              <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-          </n-icon>
-        </template>
-      </n-input>
+    <!-- 批量操作 -->
+    <div class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">批量操作</n-text>
+      </div>
+      <div class="group-content">
+        <n-space>
+          <n-checkbox 
+            :checked="isAllSelected"
+            :indeterminate="isIndeterminate"
+            @update:checked="handleSelectAll"
+            size="small"
+          >
+            全选
+          </n-checkbox>
+          <n-select
+            v-model:value="batchAction"
+            size="small"
+            style="width: 120px;"
+            placeholder="批量操作"
+            :options="batchActionOptions"
+            @update:value="handleBatchAction"
+            :disabled="selectedFieldsCount === 0"
+          />
+          <n-text depth="3" style="font-size: 12px;">
+            已显示 {{ visibleFieldsCount }} / {{ fieldList.length }} 个字段
+          </n-text>
+        </n-space>
+      </div>
+    </div>
+
+    <!-- 搜索 -->
+    <div class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">搜索字段</n-text>
+      </div>
+      <div class="group-content">
+        <n-input
+          v-model:value="searchKeyword"
+          placeholder="输入字段名称搜索"
+          size="small"
+          clearable
+        >
+          <template #prefix>
+            <n-icon>
+              <svg viewBox="0 0 24 24">
+                <path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              </svg>
+            </n-icon>
+          </template>
+        </n-input>
+      </div>
     </div>
 
     <!-- 字段列表 -->
-    <div class="field-list">
-      <!-- 表头 -->
-      <div class="field-header-row">
-        <div class="header-left">
-          <span style="width: 120px;">字段名 / 备注名</span>
-        </div>
-        <div class="header-controls">
-          <span style="width: 70px;">宽度</span>
-          <span style="width: 70px;">对齐</span>
-          <span style="width: 40px;">固定</span>
-          <span style="width: 40px;">排序</span>
-          <span style="width: 40px;">显示</span>
-        </div>
+    <div class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">字段列表</n-text>
       </div>
-      
-      <div 
-        v-for="(field, index) in filteredFields" 
-        :key="field.key" 
-        class="field-item"
-        draggable="true"
-        @dragstart="handleDragStart(index)"
-        @dragover.prevent
-        @drop="handleDrop(index)"
-      >
-        <div class="field-content">
-          <div class="field-row">
-            <div class="field-left">
-              <n-checkbox 
-                :checked="field.selected ?? false"
-                @update:checked="(val) => field.selected = val"
-                size="small"
-                @click.stop
-              />
-              <span class="drag-handle">⋮⋮</span>
-              <div class="field-name-area">
-                <n-input
-                  v-if="editingLabel === field.key"
-                  v-model:value="field.label"
-                  size="small"
-                  placeholder="输入字段名"
-                  @blur="editingLabel = null"
-                  @keyup.enter="editingLabel = null"
-                  @click.stop
-                  autofocus
-                />
-                <n-text 
-                  v-else
-                  strong 
-                  style="cursor: pointer; padding: 4px 0;"
-                  @mouseenter="editingLabel = field.key"
-                  @click.stop
-                >
-                  {{ field.label }}
-                </n-text>
-              </div>
+      <div class="group-content">
+        <div class="field-list">
+          <!-- 表头 -->
+          <div class="field-header-row">
+            <div class="header-left">
+              <span style="width: 120px;">字段名</span>
             </div>
-            <div class="field-controls">
-              <div class="control-item">
-                <n-input-number 
-                  v-model:value="field.width" 
-                  size="small" 
-                  :min="50" 
-                  :max="500" 
-                  :step="10"
-                  @click.stop
-                />
-              </div>
-              <div class="control-item">
-                <n-select 
-                  v-model:value="field.align" 
-                  size="small"
-                  :options="alignOptions"
-                  @click.stop
-                />
-              </div>
-              <div class="control-item">
-                <n-select 
-                  :value="field.fixed || 'none'"
-                  @update:value="(val) => field.fixed = val === 'none' ? false : val"
-                  size="small"
-                  :options="[
-                    { label: '无', value: 'none' },
-                    { label: '左', value: 'left' },
-                    { label: '右', value: 'right' }
-                  ]"
-                  @click.stop
-                />
-              </div>
-              <div class="control-item">
-                <n-switch 
-                  :value="field.sortable ?? false"
-                  @update:value="(val) => field.sortable = val"
-                  size="small"
-                  @click.stop
-                />
-              </div>
-              <div class="control-item">
-                <n-switch 
-                  :value="field.visible ?? true"
-                  @update:value="(val) => field.visible = val"
-                  size="small"
-                  @click.stop
-                />
+            <div class="header-controls">
+              <span style="width: 70px;">宽度</span>
+              <span style="width: 70px;">对齐</span>
+              <span style="width: 40px;">固定</span>
+              <span style="width: 40px;">排序</span>
+              <span style="width: 40px;">显示</span>
+            </div>
+          </div>
+          
+          <div 
+            v-for="(field, index) in filteredFields" 
+            :key="field.key" 
+            class="field-item"
+            draggable="true"
+            @dragstart="handleDragStart(index)"
+            @dragover.prevent
+            @drop="handleDrop(index)"
+          >
+            <div class="field-content">
+              <div class="field-row">
+                <div class="field-left">
+                  <n-checkbox 
+                    :checked="field.selected ?? false"
+                    @update:checked="(val) => field.selected = val"
+                    size="small"
+                    @click.stop
+                  />
+                  <span class="drag-handle">⋮⋮</span>
+                  <div class="field-name-area">
+                    <n-input
+                      v-if="editingLabel === field.key"
+                      v-model:value="field.label"
+                      size="small"
+                      placeholder="输入字段名"
+                      @blur="editingLabel = null"
+                      @keyup.enter="editingLabel = null"
+                      @click.stop
+                      autofocus
+                    />
+                    <n-text 
+                      v-else
+                      strong 
+                      style="cursor: pointer; padding: 4px 0;"
+                      @mouseenter="editingLabel = field.key"
+                      @click.stop
+                    >
+                      {{ field.label }}
+                    </n-text>
+                  </div>
+                </div>
+                <div class="field-controls">
+                  <div class="control-item">
+                    <n-input-number 
+                      v-model:value="field.width" 
+                      size="small" 
+                      :min="50" 
+                      :max="500" 
+                      :step="10"
+                      @click.stop
+                    />
+                  </div>
+                  <div class="control-item">
+                    <n-select 
+                      v-model:value="field.align" 
+                      size="small"
+                      :options="alignOptions"
+                      @click.stop
+                    />
+                  </div>
+                  <div class="control-item">
+                    <n-select 
+                      :value="field.fixed || 'none'"
+                      @update:value="(val) => field.fixed = val === 'none' ? false : val"
+                      size="small"
+                      :options="[
+                        { label: '无', value: 'none' },
+                        { label: '左', value: 'left' },
+                        { label: '右', value: 'right' }
+                      ]"
+                      @click.stop
+                    />
+                  </div>
+                  <div class="control-item">
+                    <n-switch 
+                      :value="field.sortable ?? false"
+                      @update:value="(val) => field.sortable = val"
+                      size="small"
+                      @click.stop
+                    />
+                  </div>
+                  <div class="control-item">
+                    <n-switch 
+                      :value="field.visible ?? true"
+                      @update:value="(val) => field.visible = val"
+                      size="small"
+                      @click.stop
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- 空状态 -->
+        <div v-if="filteredFields.length === 0" class="empty-state">
+          <n-empty description="未找到匹配的字段" size="small" />
+        </div>
       </div>
     </div>
 
-    <!-- 空状态 -->
-    <div v-if="filteredFields.length === 0" class="empty-state">
-      <n-empty description="未找到匹配的字段" size="small" />
-    </div>
-
     <!-- 隐藏字段预览 -->
-    <div v-if="hiddenFields.length > 0" class="hidden-preview">
-      <n-text class="preview-title">隐藏字段预览</n-text>
-      <div class="preview-content">
-        以下字段将对用户隐藏：{{ hiddenFields.map(f => f.label).join('、') }}
+    <div v-if="hiddenFields.length > 0" class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">隐藏字段预览</n-text>
+      </div>
+      <div class="group-content">
+        <n-text depth="3" style="font-size: 12px;">
+          以下字段将对用户隐藏：{{ hiddenFields.map(f => f.label).join('、') }}
+        </n-text>
       </div>
     </div>
   </div>
@@ -384,21 +414,43 @@ watch(() => fieldList.value, updateConfig, { deep: true })
   }
 }
 
-.batch-actions {
-  margin-bottom: 12px;
+.help-section {
+  margin-bottom: 16px;
   padding: 8px;
   background: #f8f9fa;
   border-radius: 4px;
+  border-left: 3px solid #18a058;
+  
+  .help-item {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+  }
 }
 
-.search-section {
+.setting-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
   margin-bottom: 12px;
+  background: #fafbfc;
 }
 
-.field-list {
-  border: 1px solid #e8e8e8;
-  border-radius: 4px;
-  overflow: hidden;
+.group-header {
+  margin-bottom: 12px;
+  
+  .group-title {
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.group-content {
+  .field-list {
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    overflow: hidden;
+  }
 }
 
 .field-header-row {
@@ -484,23 +536,5 @@ watch(() => fieldList.value, updateConfig, { deep: true })
 .empty-state {
   text-align: center;
   padding: 40px;
-}
-
-.hidden-preview {
-  margin-top: 16px;
-  padding: 12px;
-  background: #fff7e6;
-  border: 1px solid #ffd591;
-  border-radius: 4px;
-  
-  .preview-title {
-    font-weight: 500;
-    margin-bottom: 8px;
-  }
-  
-  .preview-content {
-    font-size: 12px;
-    color: #666;
-  }
 }
 </style>

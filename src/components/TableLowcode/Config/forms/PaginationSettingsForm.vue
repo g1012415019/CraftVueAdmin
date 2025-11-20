@@ -1,70 +1,72 @@
 <template>
   <div class="pagination-settings">
-    <n-form label-placement="left" label-width="100px" size="small">
-      
-      <!-- 分页配置 -->
-      <div class="config-section">
-        <div class="section-header">
-          <div class="section-title">分页配置</div>
-          <div class="help-toggle">
-            <n-switch v-model:value="showHelp" size="small" />
-            <span>显示帮助</span>
-          </div>
-        </div>
-        <div class="config-grid">
-          <n-form-item label="启用">
-            <n-switch v-model:value="formState.enabled" size="small" />
-          </n-form-item>
-          
-          <template v-if="formState.enabled">
-    
-            
-            <n-form-item label="每页选项">
-              <div class="page-size-options">
-                <n-dynamic-tags 
-                  v-model:value="pageSizeStrings" 
-                  :max="6"
-                  size="small"
-                  type="primary"
-                />
-                <div class="page-size-help">
-                  <n-text depth="3" style="font-size: 11px;">
-                    输入数字后按回车添加选项，点击标签删除
-                  </n-text>
-                </div>
-              </div>
-            </n-form-item>
-            
-            <n-form-item label="默认每页">
-              <n-select
-                v-model:value="formState.pageSize"
-                :options="defaultPageSizeOptions"
-                size="small"
-                style="width: 120px;"
-                placeholder="选择默认每页数量"
-              />
-            </n-form-item>
-          </template>
-        </div>
-        
-        <div v-if="showHelp" class="help-section">
-          <div class="help-item">
-            <strong>启用：</strong>关闭后将隐藏整个分页器
-          </div>
-          <div class="help-item">
-            <strong>每页选项：</strong>设置每页显示个数的选择器选项
-          </div>
-          <div class="help-item">
-            <strong>默认每页：</strong>设置默认每页显示的条数
-          </div>
-        </div>
+    <div class="section-header">
+      <n-text class="section-title">分页设置</n-text>
+      <n-text depth="3">配置表格的分页显示选项</n-text>
+    </div>
+
+    <div class="help-section">
+      <div class="help-item">
+        <strong>分页功能：</strong>控制表格数据的分页显示，提升大数据量的浏览体验
       </div>
-    </n-form>
+      <div class="help-item">
+        <strong>每页选项：</strong>设置用户可选择的每页显示条数
+      </div>
+    </div>
+
+    <!-- 分页开关 -->
+    <div class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">分页开关</n-text>
+      </div>
+      <div class="group-content">
+        <n-switch v-model:value="formState.enabled" size="medium">
+          <template #checked>启用</template>
+          <template #unchecked>禁用</template>
+        </n-switch>
+      </div>
+    </div>
+
+    <!-- 分页配置 -->
+    <div v-if="formState.enabled" class="setting-group">
+      <div class="group-header">
+        <n-text class="group-title">分页配置</n-text>
+      </div>
+      <div class="group-content">
+        <n-space vertical>
+          <div class="form-row">
+            <n-text depth="3" style="width: 80px;">每页选项</n-text>
+            <div style="flex: 1;">
+              <n-dynamic-tags 
+                v-model:value="pageSizeStrings" 
+                :max="6"
+                size="small"
+                type="primary"
+              />
+              <n-text depth="3" style="font-size: 11px; margin-top: 4px; display: block;">
+                输入数字后按回车添加选项，点击标签删除
+              </n-text>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <n-text depth="3" style="width: 80px;">默认每页</n-text>
+            <n-select
+              v-model:value="formState.pageSize"
+              :options="defaultPageSizeOptions"
+              size="small"
+              style="width: 120px;"
+              placeholder="选择默认每页数量"
+            />
+          </div>
+        </n-space>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted, withDefaults, defineProps, defineEmits } from 'vue'
+import { ref, watch, onMounted, withDefaults, defineProps, defineEmits, computed } from 'vue'
 import type { PaginationSettingsConfig } from '../../types/config/paginationSettings'
 import { ConfigManager } from '../../utils/configManager'
 
@@ -91,7 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
  * - configChange: 配置变更事件，向父组件传递新的配置
  */
 const emit = defineEmits<{
-  configChange: [config: PaginationSettingsConfig]
+  'config-change': [config: PaginationSettingsConfig]
 }>()
 
 // ==================== 组件内状态 ====================
@@ -106,11 +108,6 @@ const formState = ref<PaginationSettingsConfig>({
   // 合并Props传入的初始配置
   ...props.initialConfig
 })
-
-/**
- * 帮助信息显示状态
- */
-const showHelp = ref(false)
 
 // ==================== 计算属性 ====================
 
@@ -142,7 +139,6 @@ const defaultPageSizeOptions = computed(() => {
   }))
 })
 
-
 // ==================== 工具函数 ====================
 
 /**
@@ -150,7 +146,7 @@ const defaultPageSizeOptions = computed(() => {
  */
 const emitConfigChange = () => {
   const configCopy = { ...formState.value }
-  emit('configChange', configCopy)
+  emit('config-change', configCopy)
 }
 
 // ==================== 生命周期 ====================
@@ -204,81 +200,62 @@ const ensureDefaultPageSizeInOptions = () => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .pagination-settings {
   padding: 16px;
 }
 
-.config-section {
-  margin-bottom: 24px;
-}
-
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.help-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #666;
-}
-
-.config-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px 24px;
-  align-items: start;
-}
-
-.page-size-options {
-  grid-template-columns: 1fr;
-  gap: 8px;
-  .page-size-help {
-    margin-top: 4px;
+  
+  .section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
   }
 }
 
-.config-grid :deep(.n-form-item) {
-  margin-bottom: 0;
-}
-
-.config-grid :deep(.n-form-item-feedback-wrapper) {
-  min-height: 0;
-}
-
 .help-section {
-  margin-top: 16px;
-  padding: 12px;
+  margin-bottom: 16px;
+  padding: 8px;
   background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #18a058;
+  
+  .help-item {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+}
+
+.setting-group {
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  border-left: 3px solid #1890ff;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fafbfc;
 }
 
-.help-item {
-  margin-bottom: 8px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #666;
+.group-header {
+  margin-bottom: 12px;
+  
+  .group-title {
+    font-size: 14px;
+    font-weight: 500;
+  }
 }
 
-.help-item:last-child {
-  margin-bottom: 0;
-}
-
-.help-item strong {
-  color: #333;
+.group-content {
+  .form-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }
 </style>
