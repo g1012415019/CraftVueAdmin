@@ -19,7 +19,6 @@ declare module '@vue/runtime-core' {
     copy: typeof import('./src/components/TableLowcode/Config/forms/DataFilterForm copy.vue')['default']
     CountTo: typeof import('./src/components/CountTo/CountTo.vue')['default']
     DataFilterForm: typeof import('./src/components/TableLowcode/Config/forms/DataFilterForm.vue')['default']
-    'DataFilterForm copy': typeof import('./src/components/TableLowcode/Config/forms/DataFilterForm copy.vue')['default']
     DataTable: typeof import('./src/components/TableLowcode/Table/DataTable.vue')['default']
     EditableCell: typeof import('./src/components/Table/src/components/editable/EditableCell.vue')['default']
     FieldSettingsForm: typeof import('./src/components/TableLowcode/Config/forms/FieldSettingsForm.vue')['default']

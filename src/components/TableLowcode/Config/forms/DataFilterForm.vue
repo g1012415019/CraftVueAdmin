@@ -426,18 +426,31 @@ const getConditionSummary = () => {
       }
     })
     
-    return conditionTexts.join('')
+    let groupText = conditionTexts.join('')
+    
+    // 如果有多个条件，用括号包围并标注组名
+    if (group.conditions.length > 1) {
+      const groupName = group.name || `条件组${groupIndex + 1}`
+      groupText = `${groupName}(${groupText})`
+    } else if (group.name && group.name !== `条件组 ${groupIndex + 1}`) {
+      // 单个条件但有自定义组名时也显示组名
+      groupText = `${group.name}:${groupText}`
+    }
+    
+    return groupText
   }).filter(text => text)
   
   if (groupTexts.length === 0) return '暂无过滤条件'
-  if (groupTexts.length === 1) return `当${groupTexts[0]}`
+  if (groupTexts.length === 1) return `当${groupTexts[0]}时显示`
   
+  // 多组时，使用组间逻辑连接
   let result = `当${groupTexts[0]}`
   for (let i = 1; i < groupTexts.length; i++) {
     const prevGroup = groups[i - 1]
     const groupLogic = (prevGroup.groupLogic || 'AND') === 'AND' ? '且' : '或'
     result += `${groupLogic}${groupTexts[i]}`
   }
+  result += '时显示'
   
   return result
 }
