@@ -17,9 +17,7 @@
           </n-form-item>
           
           <template v-if="formState.enabled">
-            <n-form-item label="总数">
-              <n-switch v-model:value="formState.showTotal" size="small" />
-            </n-form-item>
+    
             
             <n-form-item label="每页选项">
               <div class="page-size-options">
@@ -39,7 +37,7 @@
             
             <n-form-item label="默认每页">
               <n-select
-                v-model:value="formState.defaultPageSize"
+                v-model:value="formState.pageSize"
                 :options="defaultPageSizeOptions"
                 size="small"
                 style="width: 120px;"
@@ -52,9 +50,6 @@
         <div v-if="showHelp" class="help-section">
           <div class="help-item">
             <strong>启用：</strong>关闭后将隐藏整个分页器
-          </div>
-          <div class="help-item">
-            <strong>总数：</strong>控制"共 X 条"文字的显示
           </div>
           <div class="help-item">
             <strong>每页选项：</strong>设置每页显示个数的选择器选项
@@ -124,7 +119,7 @@ const showHelp = ref(false)
  */
 const pageSizeStrings = computed({
   get: () => {
-    const options = formState.value.pageSizeOptions || []
+    const options = formState.value.pageSizes || []
     return options.map(size => size.toString())
   },
   set: (value: string[]) => {
@@ -132,7 +127,7 @@ const pageSizeStrings = computed({
       .map(str => parseInt(str))
       .filter(num => !isNaN(num) && num > 0)
       .sort((a, b) => a - b)
-    formState.value.pageSizeOptions = numbers
+    formState.value.pageSizes = numbers
   }
 })
 
@@ -140,14 +135,12 @@ const pageSizeStrings = computed({
  * 默认每页数量选项 - 基于当前的每页选项生成
  */
 const defaultPageSizeOptions = computed(() => {
-  const options = formState.value.pageSizeOptions || []
+  const options = formState.value.pageSizes || []
   return options.map(size => ({
     label: `${size} 条/页`,
     value: size
   }))
 })
-
-// ==================== 常量定义 ====================
 
 
 // ==================== 工具函数 ====================
@@ -183,12 +176,12 @@ watch(
  * 监听每页选项变化，确保默认值始终在选项中
  */
 watch(
-  () => formState.value.pageSizeOptions,
+  () => formState.value.pageSizes,
   (newOptions) => {
     if (newOptions && newOptions.length > 0) {
       // 如果当前默认值不在选项中，设置为第一个选项
-      if (!newOptions.includes(formState.value.defaultPageSize as number)) {
-        formState.value.defaultPageSize = newOptions[0]
+      if (!newOptions.includes(formState.value.pageSize as number)) {
+        formState.value.pageSize = newOptions[0]
       }
     }
   },
@@ -201,12 +194,12 @@ watch(
  * 确保默认每页值在选项中
  */
 const ensureDefaultPageSizeInOptions = () => {
-  if (!formState.value.pageSizeOptions || formState.value.pageSizeOptions.length === 0) {
-    formState.value.pageSizeOptions = [10, 20, 50, 100]
+  if (!formState.value.pageSizes || formState.value.pageSizes.length === 0) {
+    formState.value.pageSizes = ConfigManager.getPaginationDefaults().pageSizes
   }
   
-  if (!formState.value.pageSizeOptions.includes(formState.value.defaultPageSize as number)) {
-    formState.value.defaultPageSize = formState.value.pageSizeOptions[0]
+  if (!formState.value.pageSizes?.includes(formState.value.pageSize as number)) {
+    formState.value.pageSize = formState.value.pageSizes?.[0]
   }
 }
 </script>

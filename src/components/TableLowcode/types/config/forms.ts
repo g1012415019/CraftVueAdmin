@@ -7,7 +7,7 @@
 export type { BasicSettingsConfig } from './basicSettings'
 export type { SortConfig,SortableField } from './sortSettings'
 export type { PaginationSettingsConfig } from './paginationSettings'
-export type { DataFilterConfig } from './dataFilter'
+export type { DataFilterConfig, FilterCondition, FilterGroup } from './dataFilter'
 export type { FilterListSettingsConfig } from './filterListSettings'
 export type { FieldSettingsConfig } from './fieldSettings'
 export type { ConfigPanelProps } from './configPanel'

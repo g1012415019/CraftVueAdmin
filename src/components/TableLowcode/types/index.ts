@@ -46,7 +46,9 @@ export type {
 
 // 配置类型 - 对应 Config/ 目录
 export type { 
-  DataFilterConfig, 
+  DataFilterConfig,
+  FilterCondition,
+  FilterGroup,
   SortConfig,
   SortableField,
   BasicSettingsConfig,

@@ -10,7 +10,7 @@ import { cloneDeep } from 'lodash-es'
  * 统一管理各模块的默认配置
  */
 export class ConfigManager {
-  
+
   /**
    * 获取基础配置默认值
    */
@@ -18,7 +18,7 @@ export class ConfigManager {
     return {
       // 行高设置
       rowHeight: 'medium',
-      
+
       // 显示设置
       showIndex: false,
       showRecordShortcut: true,
@@ -26,17 +26,17 @@ export class ConfigManager {
       showVerticalLines: true,
       showAlternateRowColors: true,
       headerTextWrap: false,
-      
+
       // 表格交互方式
       interactionMode: 'classic',
-      
+
       // 更多设置
       allowInlineEdit: false,
-      
+
       // 自动刷新
       autoRefresh: false,
       autoRefreshInterval: 60,
-      
+
       // 兼容旧配置
       size: 'medium',
       bordered: true,
@@ -53,9 +53,6 @@ export class ConfigManager {
       enabled: true,
       pageSize: 10,
       pageSizes: [10, 20, 50, 100],
-      showSizeChanger: true,
-      showQuickJumper: true,
-      showTotal: true
     }
   }
 
@@ -93,7 +90,7 @@ export class ConfigManager {
    */
   static getDataFilterDefaults(): DataFilterConfig {
     return {
-      enabled: true,
+      groups:[],
     }
   }
 
@@ -115,30 +112,12 @@ export class ConfigManager {
     }
 
     // 只初始化不存在的配置
-    if (!view.basic) {
-      view.basic = this.getBasicDefaults()
-    }
-    
-    if (!view.pagination) {
-      view.pagination = this.getPaginationDefaults()
-    }
-    
-    if (!view.sort) {
-      view.sort ={...this.getSortDefaults(), ...view.sort}
-    }
-    
-    if (!view.filterList) {
-      view.filterList = this.getFilterListDefaults()
-    }
-
-    if (!view.dataFilter) {
-      view.dataFilter = this.getDataFilterDefaults()
-    }
-    
-    if (!view.columnVisibility) {
-      view.columnVisibility = {}
-    }
-
+    view.basic = { ...this.getBasicDefaults(), ...view.basic || {} }
+    view.pagination = { ...this.getPaginationDefaults(), ...view.pagination || {} }
+    view.sort = { ...this.getSortDefaults(), ...view.sort || {} }
+    view.filterList = { ...this.getFilterListDefaults(), ...view.filterList || {} }
+    view.dataFilter =  { ...this.getDataFilterDefaults(), ...view.dataFilter ||{} }
+    view.columnVisibility = { ...view.columnVisibility }
     return view
   }
 
@@ -157,7 +136,7 @@ export class ConfigManager {
       key: viewKey,
       name: viewName
     }
-    
+
     // 使用 initializeViewConfig 初始化配置
     return this.initializeViewConfig(view)
   }
@@ -176,13 +155,13 @@ export class ConfigManager {
    */
   static initializeAllViews(config: any): any {
     if (!config.views) return config
-    
+
     config.views.forEach((view: any) => {
       this.initializeViewConfig(view)
     })
 
-    config._initialConfig= cloneDeep(config.views[0]._initialConfig);
-    
+    config._initialConfig = cloneDeep(config.views[0]._initialConfig);
+
     return config
   }
 }

@@ -163,7 +163,7 @@ import { ConfigManager } from '../../utils/configManager'
 // ==================== 组件定义 ====================
 
 const props = defineProps<{
-  config?: BasicSettingsConfig
+  initialConfig?: BasicSettingsConfig
 }>()
 
 const emit = defineEmits<{
@@ -174,7 +174,7 @@ const emit = defineEmits<{
 
 const formState = ref<BasicSettingsConfig>({
   ...ConfigManager.getBasicDefaults(),
-  ...props.config
+  ...props.initialConfig
 })
 
 // ==================== 监听配置变化 ====================
@@ -187,15 +187,6 @@ watch(
   { deep: true }
 )
 
-watch(
-  () => props.config,
-  (newConfig) => {
-    if (newConfig) {
-      Object.assign(formState.value, newConfig)
-    }
-  },
-  { deep: true }
-)
 </script>
 
 <style scoped>

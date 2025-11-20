@@ -51,6 +51,16 @@ const tableConfig: ExternalConfig = {
           }
         ]
       },
+      "pagination": {
+          "enabled": false,
+          "pageSize": 20,
+          "pageSizes": [
+            10,
+            20,
+            50,
+            100
+          ]
+        },
       filterList: {
         "filters": [
           {
