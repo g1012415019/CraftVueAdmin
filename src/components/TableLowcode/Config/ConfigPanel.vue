@@ -119,19 +119,10 @@
   </n-modal>
 
   <!-- 配置描述弹窗 -->
-  <n-modal v-model:show="showConfigModal" preset="dialog" title="完整配置描述" style="width: 600px;">
-    <template #header>
-      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <span>完整配置描述</span>
-        <n-button size="small" @click="copyConfigDescription">复制描述</n-button>
-      </div>
-    </template>
-    <div class="config-modal-content">
-      <n-text style="font-size: 13px; line-height: 1.6; color: #555;">
-        {{ getConfigDescription() }}
-      </n-text>
-    </div>
-  </n-modal>
+  <ConfigDescriptionModal 
+    v-model:show="showConfigModal" 
+    :config="props.viewConfig"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -151,6 +142,7 @@ import FilterListSettingsForm from './forms/FilterListSettingsForm.vue';
 import SortSettingsForm from './forms/SortSettingsForm.vue';
 import FieldSettingsForm from './forms/FieldSettingsForm.vue';
 import DataFilterForm from './forms/DataFilterForm.vue';
+import ConfigDescriptionModal from './ConfigDescriptionModal.vue';
 import { 
   EditOutlined as EditIcon
 } from '@vicons/antd'
@@ -215,13 +207,6 @@ const components = {
   'sort-filter': SortSettingsForm,
   'data-filter': DataFilterForm,
   data: FilterListSettingsForm
-};
-
-/** 获取配置描述 - 生成当前视图配置的JSON字符串 */
-const getConfigDescription = () => {
-  const config = props.viewConfig;
-  if (!config) return '视图配置为空';
-  return JSON.stringify(config, null, 2);
 };
 
 /** 开始编辑标题 - 进入标题编辑模式 */
@@ -340,15 +325,6 @@ const handleImportConfig = () => {
   } catch (error) {
     message.error('配置格式错误，请检查JSON格式');
   }
-};
-
-/** 复制配置描述 - 将配置描述文本复制到剪贴板 */
-const copyConfigDescription = () => {
-  navigator.clipboard.writeText(getConfigDescription()).then(() => {
-    message.success('配置描述已复制');
-  }).catch(() => {
-    message.error('复制失败');
-  });
 };
 </script>
 
