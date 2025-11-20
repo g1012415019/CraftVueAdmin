@@ -15,6 +15,16 @@ export interface FilterFieldConfig {
   position: 'basic' | 'advanced' | 'both'
   /** 选择类型筛选器的选项列表 */
   options?: Array<{ label: string; value: any }>
+  /** 是否允许多选（适用于select、checkbox等） */
+  allowMultiple?: boolean
+  /** 默认值 */
+  defaultValue?: any
+  /** 占位符文本 */
+  placeholder?: string
+  /** 是否必填 */
+  required?: boolean
+  /** 是否实时筛选 */
+  realTimeFilter?: boolean
 }
 
 /** 筛选列表配置接口 */
