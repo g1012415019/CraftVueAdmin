@@ -1,5 +1,5 @@
 <template>
-  <n-drawer :show="true" @update:show="emit('update:show', $event)" :width="800" placement="right" :z-index="1000">
+  <n-drawer :show="props.show" @update:show="emit('update:show', $event)" :width="800" placement="right" :z-index="1000">
     <n-drawer-content closable :body-content-style="{ padding: '0' }">
       <template #header>
         <div class="drawer-header">

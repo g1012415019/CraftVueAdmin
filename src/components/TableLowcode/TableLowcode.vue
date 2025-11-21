@@ -34,7 +34,8 @@
 
     <!-- 配置面板 -->
     <ConfigPanel 
-      v-if="showConfigPanel" 
+      v-if="showConfigPanel"
+      :show="showConfigPanel"
       :current-view-name="currentViewName" 
       :view-key="currentViewKey" 
       :view-config="currentViewConfig" 
@@ -150,11 +151,12 @@ const handleDeleteView = (viewKey: string) => {
 
 // ==================== 配置更新 ====================
 const handleConfigUpdated = (updatedViewConfig: any) => {
-  if (!currentViewConfig.value) return
+  const views = internalConfig.value.views
+  if (!views) return
 
-  const viewIndex = internalConfig.value.views?.findIndex(v => v.key === currentViewKey.value)
-  if (viewIndex !== -1 && internalConfig.value.views) {
-    internalConfig.value.views[viewIndex] = updatedViewConfig
+  const viewIndex = views.findIndex(v => v.key === currentViewKey.value)
+  if (viewIndex !== -1) {
+    views[viewIndex] = updatedViewConfig
   }
 }
 
@@ -168,13 +170,24 @@ const handleRowClick = (row: any, index: number) => {
 }
 
 const handleSortChange = (field: string, order: 'asc' | 'desc' | null) => {
-  const view = internalConfig.value.views?.find(v => v.key === currentViewKey.value)
+  const views = internalConfig.value.views
+  if (!views) return
+
+  const view = views.find(v => v.key === currentViewKey.value)
   if (view) {
+    // 更新排序字段的默认排序方向
     if (!view.sort) {
-      view.sort = {}
+      view.sort = { customFields: [] }
     }
-    view.sort.field = field
-    view.sort.order = order || undefined
+    if (!view.sort.customFields) {
+      view.sort.customFields = []
+    }
+    
+    // 找到对应字段并更新排序方向
+    const sortField = view.sort.customFields.find(f => f.key === field)
+    if (sortField) {
+      sortField.defaultOrder = order || undefined
+    }
   }
 }
 
